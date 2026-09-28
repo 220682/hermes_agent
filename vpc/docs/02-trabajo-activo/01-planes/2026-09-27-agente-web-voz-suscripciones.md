@@ -26,12 +26,12 @@ El Responsable humano trabaja con Claude Pro (a futuro Max) y Cursor (a futuro P
 
 ### Resultado esperado
 
-El Responsable humano abre una app web local (diseñada para poder empaquetarse después como app móvil) con aspecto de asistente futurista tipo JARVIS, elige Claude o Cursor en un desplegable, habla con el agente y oye su respuesta, sin ElevenLabs y usando su propio login de cada CLI.
+El Responsable humano abre JEIGER, una app web local de escritorio con aspecto de asistente futurista "Oro y carmesí" (ver `vpc/docs/05-diseno-y-referencias/design.md`), elige Claude o Cursor en un desplegable, habla con el agente y oye su respuesta, sin ElevenLabs y usando su propio login de cada CLI. El código no debe impedir un empaquetado móvil posterior.
 
 ### Alcance
 
 1. **F1. Cerebro por suscripción: Claude y Cursor.** Dos proveedores nuevos de Hermes (plugins en `plugins/model-providers/`, patrón `copilot-acp`) donde el cerebro de cada turno es el CLI oficial y sin modificar, con el login del propio usuario: `claude -p --output-format stream-json` y el CLI headless de Cursor (`cursor-agent`, por verificar). Tier-agnóstico (Pro/Max, Pro/Pro+). Incluye un `hermes auth status` que vea ambos logins y fijar proveedor y modelo por defecto.
-2. **F2. App web local.** Proyecto separado sobre `api_server` o `tui_gateway`, con desplegable Claude/Cursor y estilo JARVIS (dirección visual en "Diseño / UI"), pensado para reutilizarse en móvil.
+2. **F2. App web local (JEIGER, escritorio).** Proyecto separado sobre `api_server` o `tui_gateway`, con desplegable Claude/Cursor, orbe con tres estados (reposo, pensando, respondiendo) y el estilo de `05-diseno-y-referencias/design.md`.
 3. **F3. Voz gratuita.** Micrófono y reproducción en el navegador; STT y TTS gratuitos (Web Speech API y/o faster-whisper; Edge TTS y/o Piper), con interrupción (barge-in).
 
 Todo corre en localhost.
@@ -41,7 +41,8 @@ Todo corre en localhost.
 - Despliegue en la nube (AWS o SaaS): plan futuro, ver "Elementos postergados".
 - Multiusuario, ofrecer el servicio a terceros, y guardar o intermediar credenciales de Claude.ai en un servidor (prohibido por la política de Anthropic).
 - ElevenLabs y cualquier voz de pago.
-- Tareas del agente sobre repositorios del usuario y publicación en tiendas móviles (planes futuros).
+- Versión móvil o iPhone y publicación en tiendas de apps (plan futuro, junto con la nube). La spec cubre solo escritorio.
+- Tareas del agente sobre repositorios del usuario (plan futuro).
 - Cambios al núcleo de Hermes: todo va como plugin, skill, CLI o app separada (regla del `AGENTS.md` raíz).
 - Usar nombre, logos o imágenes de Marvel: el diseño es inspirado, no copiado.
 
@@ -62,7 +63,7 @@ Un único usuario: el Responsable humano. Roles del flujo: Orquestador, Planner,
 
 ### Diseño / UI aplicable
 
-Sin sistema de diseño en `05-diseno-y-referencias/`. La web es móvil primero y un proyecto separado (`web/AGENTS.md` prohíbe reescribir el chat en React dentro del dashboard actual). Estilo: HUD futurista tipo JARVIS con orbe o anillos reactivos a la voz. La dirección visual detallada y el mockup se documentan en `05-diseno-y-referencias/` tras la investigación de referencias en curso.
+Fuente de verdad visual: `vpc/docs/05-diseno-y-referencias/design.md` (variante "Oro y carmesí", aprobada el 2026-09-28; nombre JEIGER; sin cuadrícula; tres estados del orbe con el rojo atenuado o intensificado según la interacción). Mockup de referencia: https://claude.ai/artifact/NF4hyLwYJC3yHzD9amrikn (privado). La web es un proyecto separado (`web/AGENTS.md` prohíbe reescribir el chat en React dentro del dashboard actual) y de escritorio; el móvil queda para un plan futuro.
 
 ### Riesgos y decisiones pendientes
 
@@ -78,7 +79,7 @@ Sin sistema de diseño en `05-diseno-y-referencias/`. La web es móvil primero y
 - [ ] Hermes responde en la terminal usando Claude como cerebro por `claude -p` con el login del Responsable humano.
 - [ ] Hermes responde en la terminal usando Cursor como cerebro por su CLI oficial (o el plan documenta el bloqueo y la alternativa).
 - [ ] `hermes auth status` muestra el estado de ambos logins, sin código distinto por plan.
-- [ ] La app web local permite elegir Claude o Cursor en un desplegable y conversar por texto, con el estilo visual aprobado.
+- [ ] La app web local (escritorio) permite elegir Claude o Cursor en un desplegable y conversar por texto, con el estilo de `design.md` y los tres estados del orbe.
 - [ ] Se puede conversar por voz (hablar, ver la respuesta, oírla) con STT y TTS gratuitos, con interrupción.
 - [ ] No hay secretos en el diff, en los registros ni en el navegador.
 - [ ] Se documentan los límites de uso de cada proveedor.
@@ -139,6 +140,9 @@ Ver Spec, "Riesgos y decisiones pendientes".
 | 2026-09-28 | Base de la ruta C probada: `claude -p` respondió con Sonnet 5, sin error de "extra usage" | Orquestador |
 | 2026-09-28 | Gate Spec aprobado; el cerebro es Claude y Cursor con el CLI oficial de cada uno; el plan se escribe completo y se ejecuta por fases | Responsable humano |
 | 2026-09-28 | La spec se limita a F1, F2 y F3 (todo local); la nube pasa a plan futuro | Responsable humano |
+| 2026-09-28 | Nombre del producto: JEIGER; sin cuadrícula; tres estados de interacción del orbe (reposo, pensando, respondiendo) | Responsable humano |
+| 2026-09-28 | Variante visual aprobada: "Oro y carmesí"; el rojo se atenúa o intensifica según la interacción del agente. Documentada en `05-diseno-y-referencias/design.md` | Responsable humano |
+| 2026-09-28 | La spec queda solo para escritorio; móvil e iPhone pasan a plan futuro (propuesta del Orquestador ante la duda del Responsable humano; no fue objetada, revertible si se pide) | Orquestador |
 | 2026-09-28 | Fuentes: política de Anthropic https://code.claude.com/docs/en/legal-and-compliance ; Cursor API https://cursor.com/docs/api ; free tier de AWS https://aws.amazon.com/about-aws/whats-new/2025/07/aws-free-tier-credits-month-free-plan/ | Orquestador |
 
 ## Enlaces a progreso y evidencia homónimos
@@ -171,4 +175,4 @@ Pendiente.
 
 - **Plan futuro: nube.** Alojar backend y web para usarlos sin el PC. Hechos ya investigados: la cuenta AWS se creó hace pocos días, así que aplica el plan de créditos (hasta 200 USD, 6 meses; al vencer AWS cierra la cuenta si no se pasa a pago) y ese reloj ya corre; Polly y Transcribe no son gratis sin límite; tipo de instancia gratuito y capacidad para Hermes más voz local sin verificar; HTTPS, autenticación (p. ej. Cognito), presupuesto y alertas de costo por definir; un SaaS de alojamiento es alternativa aceptada. En el servidor cada CLI se loguea una vez con el login del propio usuario.
 - Tareas del agente sobre repositorios del usuario (flujos con GitHub).
-- Empaquetado como app móvil.
+- Versión móvil / iPhone y empaquetado como app móvil (Capacitor); reconocimiento de voz en iOS, donde la Web Speech API no es fiable.

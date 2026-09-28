@@ -4,6 +4,10 @@
 
 El sistema de diseño (`design.md`) y los mockups de referencia (`mockups/`). Aplica solo si el repositorio tiene interfaz.
 
+## Contenido actual
+
+- [design.md](design.md): sistema visual de JEIGER (variante "Oro y carmesí", aprobada el 2026-09-28).
+
 ## Qué no vive acá
 
 Evidencia de pruebas de un plan (eso vive en `../02-trabajo-activo/03-evidencia/`).
