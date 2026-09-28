@@ -216,14 +216,6 @@ See `hermes claw migrate --help` for all options, or use the `openclaw-migration
 
 ---
 
-## Working policy (`vpc/`)
-
-The [`vpc/`](vpc/) folder holds the work policy for this repository `hermes_agent`: agent roles and delegation, the Spec/SDD → Plan → Closure flow, sessions and handoff, testing and evidence, and templates.
-
-**AI agents: before planning or changing anything in this repository, read [`vpc/README.md`](vpc/README.md) and follow it to learn how work is done here.** Its content is written in Spanish. Start with [`vpc/AGENTS.md`](vpc/AGENTS.md) and [`vpc/docs/README.md`](vpc/docs/README.md).
-
----
-
 ## Contributing
 
 We welcome contributions! See the [Contributing Guide](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing) for development setup, code style, and PR process.

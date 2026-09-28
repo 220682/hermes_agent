@@ -7,6 +7,17 @@ past that); see the **routing table** at the end and read the area file before e
 
 **Never give up on the right solution.**
 
+## Work Policy (`vpc/`)
+
+The [`vpc/`](vpc/) folder holds the work policy for this repository (`hermes_agent`): agent roles and
+delegation (Orchestrator, Planner, Worker, Auditor), the Spec/SDD → Plan → Closure flow, sessions and
+handoff, testing and evidence, and templates.
+
+**Before planning or changing anything here, read [`vpc/README.md`](vpc/README.md) to learn how work is
+done in this repository**, then follow [`vpc/AGENTS.md`](vpc/AGENTS.md) and
+[`vpc/docs/README.md`](vpc/docs/README.md). Its content is written in Spanish. Specs, plans, progress
+and evidence for real tasks live in `vpc/docs/02-trabajo-activo/`.
+
 ## What Hermes Is
 
 Hermes is a personal AI agent that runs the same agent core across a CLI, a messaging
