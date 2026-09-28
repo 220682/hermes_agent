@@ -1,0 +1,5 @@
+name: claude-cli-profile
+kind: model-provider
+version: 1.0.0
+description: Claude through the official Claude Code CLI, signed in with the user's own Claude account
+author: Hermes
