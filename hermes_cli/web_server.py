@@ -995,6 +995,7 @@ from hermes_cli.web_routers import (  # noqa: E402
     chat_ws as _chat_ws_routes,
     chat_workspaces as _chat_workspaces_routes,
     dashboard_ui as _dashboard_ui_routes,
+    providers_status as _providers_status_routes,
 )
 
 app.include_router(_files_routes.router)
@@ -1014,6 +1015,7 @@ app.include_router(_models_routes.router)
 app.include_router(_config_env_routes.router)
 app.include_router(_messaging_routes.router)
 app.include_router(_oauth_routes.router)
+app.include_router(_providers_status_routes.router)
 app.include_router(_sessions_routes.manage_router)
 app.include_router(_status_routes.logs_router)
 app.include_router(_cron_routes.router)
