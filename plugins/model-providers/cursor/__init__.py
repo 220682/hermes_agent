@@ -56,8 +56,8 @@ class CursorProfile(ProviderProfile):
     def setup_status(self, **kwargs: Any) -> dict[str, Any]:
         """``{available, logged_in, plan, detail, login_command}`` from ``cursor-agent status --format json``.
 
-        Runs the CLI on demand and reports no account identifiers. The plan is not part of the logged-out
-        payload and its logged-in field is unverified, so it is left empty rather than guessed.
+        Runs the CLI on demand and reports no account identifiers. The plan is not in ``status`` at all; it
+        comes from ``about`` and only when signed in.
         """
         base = {"available": False, "logged_in": False, "plan": "", "detail": "", "login_command": LOGIN_COMMAND}
         try:
@@ -69,8 +69,17 @@ class CursorProfile(ProviderProfile):
         except (ValueError, subprocess.SubprocessError, OSError) as exc:
             return {**base, "available": True, "detail": f"could not read `cursor-agent status`: {exc}"}
         logged_in = bool(data.get("isAuthenticated"))
-        return {**base, "available": True, "logged_in": logged_in,
+        return {**base, "available": True, "logged_in": logged_in, "plan": self._plan(command) if logged_in else "",
                 "detail": "signed in" if logged_in else str(data.get("message") or "not signed in")}
+
+    @staticmethod
+    def _plan(command: str) -> str:
+        """``Cursor <tier>`` from ``cursor-agent about --format json`` (``subscriptionTier``); "" if unreadable."""
+        try:
+            tier = str(json.loads(_run_cli(command, "about", "--format", "json").stdout).get("subscriptionTier") or "")
+        except (ValueError, subprocess.SubprocessError, OSError):
+            return ""
+        return f"Cursor {tier}" if tier else ""
 
 
 def _auth_handler(action: str, args: Any) -> bool:
@@ -80,7 +89,7 @@ def _auth_handler(action: str, args: Any) -> bool:
         if not status["available"]:
             print(f"{NAME}: unavailable ({status['detail']})")
         elif status["logged_in"]:
-            print(f"{NAME}: logged in")
+            print(f"{NAME}: logged in" + (f" ({status['plan']})" if status["plan"] else ""))
         else:
             print(f"{NAME}: logged out\n  Run `{LOGIN_COMMAND}` to sign in with your Cursor account.")
         return True

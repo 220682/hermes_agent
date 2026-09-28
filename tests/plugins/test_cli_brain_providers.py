@@ -136,8 +136,10 @@ def test_cursor_answer_comes_from_the_result_not_from_the_agents_narration():
 
 
 def _fake_cli(monkeypatch, profile, stdout):
+    """Stand in for the CLI: ``stdout`` is one text for every call, or ``{first argument: text}``."""
     monkeypatch.setattr(profile, "_command", lambda: "cli")
-    monkeypatch.setattr("agent.cli_brain.run_cli", lambda *a, **k: SimpleNamespace(stdout=stdout))
+    monkeypatch.setattr("agent.cli_brain.run_cli", lambda command, *args, **kw: SimpleNamespace(
+        stdout=stdout[args[0]] if isinstance(stdout, dict) else stdout))
 
 
 def test_claude_status_reports_the_plan_and_no_identity(monkeypatch):
@@ -159,10 +161,11 @@ def test_cursor_status_and_model_catalog_read_the_real_cli_output(monkeypatch):
                                                 "hasAccessToken": False, "message": "Not logged in"}))
     assert not profile.setup_status()["logged_in"]
 
-    _fake_cli(monkeypatch, profile, json.dumps({"status": "authenticated", "isAuthenticated": True,
-                                                "userInfo": {"email": "me@example.com"}}))
+    _fake_cli(monkeypatch, profile, {
+        "status": json.dumps({"status": "authenticated", "isAuthenticated": True, "userInfo": {"email": "me@example.com"}}),
+        "about": json.dumps({"subscriptionTier": "Free", "userEmail": "me@example.com"})})
     status = profile.setup_status()
-    assert status["logged_in"] and "me@example.com" not in json.dumps(status)
+    assert status["logged_in"] and status["plan"] == "Cursor Free" and "me@example.com" not in json.dumps(status)
 
     _fake_cli(monkeypatch, profile, "Available models\n\nauto - Auto (current, default)\ngpt-5.2 - GPT-5.2\n")
     assert [m["id"] for m in profile.discover_models()] == ["auto", "gpt-5.2"]
