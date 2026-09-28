@@ -44,16 +44,19 @@ class CursorProtocol(CliProtocol):
     live = False
 
     def build_argv(self, ctx: SpawnContext) -> list[str]:
+        workspace = _safe(ctx.workdir.replace("\\", "/"), "workspace", path=True)
+        model = _safe(ctx.model, "model") if ctx.model and ctx.model != self.name else None
+        resume = _safe(ctx.resume_id, "chat id") if ctx.resume_id else None
         body = ctx.prompt or ""
-        if ctx.resume_id is None and ctx.instructions:
+        if resume is None and ctx.instructions:
             body = f"{ctx.instructions}\n\n---\n\n{body}"
         with open(os.path.join(ctx.workdir, INPUT_FILE), "w", encoding="utf-8") as fh:
             fh.write(body)
-        argv = [ctx.command, *(ctx.args or BASE_ARGS), "--workspace", _safe(ctx.workdir.replace("\\", "/"), "workspace", path=True)]
-        if ctx.model and ctx.model != self.name:
-            argv += ["--model", _safe(ctx.model, "model")]
-        if ctx.resume_id:
-            argv.append(f"--resume={_safe(ctx.resume_id, 'chat id')}")
+        argv = [ctx.command, *(ctx.args or BASE_ARGS), "--workspace", workspace]
+        if model:
+            argv += ["--model", model]
+        if resume:
+            argv.append(f"--resume={resume}")
         return [*argv, PROMPT]
 
     def parse_line(self, line: str) -> list[BrainEvent]:
