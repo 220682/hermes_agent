@@ -163,7 +163,7 @@ Rutas verificadas en el repositorio el 2026-09-28 (las marcadas "nuevo" no exist
 **F2**
 - `apps/jeiger-web/` (nuevo): React + Vite + TypeScript. Cliente JSON-RPC reutilizable: `apps/shared` (`@hermes/shared`) si funciona en un navegador (por verificar).
 - Backend existente, sin cambios previstos: `hermes serve` (FastAPI, `127.0.0.1:9119`), WebSocket `/api/ws` (`hermes_cli/web_routers/chat_ws.py:593`), token de sesión `X-Hermes-Session-Token` fijable con `HERMES_DASHBOARD_SESSION_TOKEN` (`hermes_cli/web_server.py:353`), CORS solo para `localhost`/`127.0.0.1` con cualquier puerto (`web_server.py:427`).
-- Posible `hermes_cli/web_routers/<superficie>.py` (nuevo, solo si no se puede reutilizar una ruta existente para el estado de sesión de los proveedores; una superficie nueva es un archivo nuevo, según `web/AGENTS.md`).
+- `hermes_cli/web_routers/providers_status.py` (nuevo, verificado en real 2026-09-28): `GET /api/providers/status`, gateado con `_require_token`, expone el `setup_status()` de los plugins `claude-cli` y `cursor` de F1. `/api/providers/oauth` (`web_routers/oauth.py`) no servía para esto (Riesgo 7 confirmado): cae a `hauth.get_auth_status()`, que solo mira si el binario existe.
 - No se tocan: `web/`, `apps/desktop/`, `tui_gateway/` (tres consumidores).
 
 **F3**
@@ -218,7 +218,7 @@ No aplica: el plan no tiene cálculos ni datos de negocio (`04-flujos-de-negocio
 |---|---|---|---|---|
 | P-01 | F1 | Con una petición que invite a ejecutar un comando, `claude` no ejecuta nada por su cuenta (herramientas desactivadas); solo Hermes ejecuta herramientas, bajo su sistema de aprobaciones | Log de la prueba | Conforme |
 | P-02 | T | Antes de instalar cualquier software (CLI de Cursor, paquetes de voz) hay una autorización explícita del Responsable humano registrada en el Registro de decisiones | Fila del registro por cada instalación | Conforme |
-| P-03 | F2 | El backend local rechaza `/api/*` sin token o con token erróneo, y acepta el correcto (`X-Hermes-Session-Token`) | Respuestas de las tres peticiones | Sin verificar |
+| P-03 | F2 | El backend local rechaza `/api/*` sin token o con token erróneo, y acepta el correcto (`X-Hermes-Session-Token`) | Respuestas de las tres peticiones | Conforme para `GET /api/providers/status` (401 sin token, 401 con token erróneo, 200 con el correcto, verificado en real); se reconfirma sobre el resto de rutas que use la app al terminar F2 |
 
 ### UI / responsive / accesibilidad
 
@@ -247,7 +247,7 @@ No aplica: el plan no tiene cálculos ni datos de negocio (`04-flujos-de-negocio
 
 | ID | Fase | Ítem | Evidencia mínima | Estado |
 |---|---|---|---|---|
-| F2-01 | F2 | Spike del backend: `hermes serve --port 9119` con `HERMES_DASHBOARD_SESSION_TOKEN` tomado de un archivo local ignorado por git; el WebSocket `/api/ws` conecta con token desde `http://localhost:5173` (CORS de `localhost`) y llega `gateway.ready` | Salida del handshake y del evento | Sin verificar |
+| F2-01 | F2 | Spike del backend: `hermes serve --port 9119` con `HERMES_DASHBOARD_SESSION_TOKEN` tomado de un archivo local ignorado por git; el WebSocket `/api/ws` conecta con token desde `http://localhost:5173` (CORS de `localhost`) y llega `gateway.ready` | Salida del handshake y del evento | Observado (el arranque de `hermes serve`, la ruta REST nueva `/api/providers/status` y su auth de token quedaron verificados en real con PowerShell nativo — `Get-NetTCPConnection`, `Invoke-WebRequest`, ver evidencia F2; el handshake WS `/api/ws` y el evento `gateway.ready` desde el frontend real quedan para cuando exista `apps/jeiger-web`, no se dan por Conforme sin ese cliente real) |
 | F2-08 | F2 | Proveedor fijo por sesión: la cuenta se elige antes de la primera pregunta; cambiarla a mitad crea una sesión nueva con aviso y no altera la anterior (caché de prompt) | Comportamiento observado + revisión de que no muta el contexto | Sin verificar |
 | F3-10 | F3 | Solo voces gratuitas: la configuración de TTS y STT no usa ElevenLabs, OpenAI de voz ni `voice_live`; sin costos | Configuración revisada | Sin verificar |
 | F3-11 | F3 | Los audios temporales se borran tras usarse | Listado del directorio temporal tras una sesión | Sin verificar |
@@ -337,6 +337,10 @@ Los del Spec ("Riesgos y decisiones pendientes") siguen vigentes. Añade el Plan
 - **(F1, 2026-09-28) Antes de nombrar un proveedor nuevo, buscar el nombre entre los alias existentes** (`hermes_cli/auth.py`, `models_catalog_static.py`, `providers.py`): un alias previo hace que el comando responda por otro proveedor sin dar error.
 - **(F1, 2026-09-28) Un módulo compartido entre plugins no debe importar, a nivel de módulo, algo que dispara el descubrimiento de plugins.** `agent/cli_brain.py` importaba `tools.environments.local` arriba del archivo; si ese módulo se cargaba primero (por ejemplo al importarlo directamente en una prueba), `providers/__init__.py` intentaba re-entrar en el descubrimiento a mitad de su propia carga y los dos plugins fallaban con "cannot import name 'BrainEvent' from partially initialized module". Se resolvió difiriendo ese import a dentro de las funciones que lo usan. Método: al depurar un fallo de carga de plugin que menciona "partially initialized module", sospechar primero de un import a nivel de módulo en el archivo compartido, no en el plugin que falla.
 - **(F1, 2026-09-28) No dar por buena una salida de `hermes doctor` sin repetirla después de un cambio de código propio.** Un aviso de `hermes doctor` sobre `model.provider 'claude-cli' no reconocido` se anotó primero como un bug del núcleo (fuente de verdad duplicada); tras corregir el import circular de arriba, `hermes doctor` reconoce el proveedor sin error: el aviso era un efecto de ese bug propio, no del núcleo. Corregido en la evidencia. Método: cuando un hallazgo de riesgo describe algo como "bug del núcleo", repetir la prueba una vez más, en limpio, antes de darlo por cerrado en el plan.
+
+- **(F2, 2026-09-28) `@hermes/shared` sí funciona en un navegador fuera de Electron (confirmado, Riesgo 6 del plan).** `JsonRpcGatewayClient`/`JsonRpcRequestChannel` usan solo el `WebSocket` global, sin dependencias de Node ni de Electron. Se reutiliza tal cual en `apps/jeiger-web` en vez de reescribir un cliente JSON-RPC propio.
+- **(F2, 2026-09-28) Lanzar y verificar `hermes serve` en segundo plano desde Git Bash en Windows no es fiable; usar PowerShell nativo para verificar.** `curl` desde Git Bash dio "Connection refused" contra un puerto que `netstat` mostraba `LISTENING`, y `hermes serve --status` a veces lista de más (incluye los propios wrappers de bash de las llamadas de diagnóstico, porque su texto de comando contiene "hermes serve"). Lo fiable: lanzar con `nohup ... &`, esperar unos segundos, y verificar con `Get-NetTCPConnection` e `Invoke-WebRequest` de PowerShell. Método: para cualquier verificación de un servidor HTTP/WS local en este repo bajo Windows, preferir PowerShell nativo sobre `curl`/`netstat` de Git Bash antes de concluir que algo no arrancó.
+- **(F2, 2026-09-28) Un cambio de PATH de usuario en Windows no llega a una terminal ya abierta.** El CLI de Cursor que F1 instaló y agregó al PATH de usuario no aparece en el PATH de una terminal que ya estaba abierta cuando se hizo el cambio (`where cursor-agent` no lo encuentra). No es un bug de F1 ni de F2; para probar Cursor con sesión real hace falta una terminal nueva.
 
 ## Reglas de negocio acordadas en esta tarea
 
