@@ -77,7 +77,10 @@ Sin sistema de diseño en `05-diseno-y-referencias/`. La web nueva debe ser resp
 3. **"Sin límites".** No es alcanzable con suscripciones: Pro, Max y Pro+ tienen topes propios. El plan garantiza que Hermes no añade límites propios.
 4. **AWS.** No se sabe cuándo se creó la cuenta, y de eso depende el modelo de gratuidad. Un plan de créditos vence a los 6 meses. Tipo de instancia gratuito y si alcanza para Hermes más STT/TTS local: sin verificar.
 5. **Voz.** Latencia real de Piper/faster-whisper en una instancia pequeña sin GPU: sin medir. Web Speech API envía el audio a servidores de Google y no funciona en Firefox por defecto.
-6. **Estado de Hermes local.** Pendiente el resultado del diagnóstico de arranque (ver "Enlaces a progreso y evidencia").
+6. **Estado de Hermes local (diagnosticado 2026-09-27).** Hermes 2026.9.24 se instala y arranca en esta máquina (`setup-hermes.ps1`, entorno fuera del repo en `%LOCALAPPDATA%\hermes`). Una llamada mínima a `claude-haiku-4-5-20251001` con `--provider anthropic` respondió correctamente usando las credenciales existentes de `~/.claude/.credentials.json` (vigentes), sin error 400 "extra usage" ni 401. **Consecuencia para F1:** para el uso local del propio Responsable humano no hace falta un comando nuevo para conectar Claude; F1 se reduce a fijar proveedor/modelo por defecto, a un `hermes auth status` fiable (hoy `hermes auth status anthropic` dice "logged out" aunque la llamada funciona, porque solo mira el pool de Hermes y no los archivos de Claude Code) y al proveedor Cursor. No se probó Sonnet ni un flujo largo con herramientas, donde el 400 podría aparecer. Este uso local (Hermes leyendo las credenciales de Claude Code del propio usuario) sigue en zona gris respecto a la política de Anthropic; la spec lo trata como riesgo y no como permitido.
+   - Pendiente de configuración: no existen `config.yaml` ni `.env` en `C:\Users\BRANDY\AppData\Local\hermes` (se resuelve con `hermes model` o `hermes setup`).
+   - `.\activate.ps1` falla en Windows PowerShell 5.1 (un mensaje de uv en stderr lo aborta); el diagnóstico lo evitó ejecutando el Python del entorno directamente. No hay `pwsh` instalado.
+   - Faltan `python-telegram-bot` y `discord.py` (solo relevantes si se usa el gateway de mensajería).
 7. **Tareas sobre repositorios.** El repo trae skills de GitHub, terminal y delegación, lo que sugiere que es viable sin código nuevo de núcleo; no se probó. Se planifica en un plan aparte una vez exista la web.
 
 ### Criterios de aceptación
@@ -149,7 +152,7 @@ Ver Spec, "Riesgos y decisiones pendientes".
 
 - Progreso: `../02-progreso/2026-09-27-agente-web-voz-suscripciones.md` (aún no creado)
 - Evidencia: `../03-evidencia/2026-09-27-agente-web-voz-suscripciones.md` (aún no creado)
-- Diagnóstico de arranque local de Hermes: en curso, se registra aquí al terminar.
+- Diagnóstico de arranque local de Hermes: ver "Riesgos y decisiones pendientes", punto 6. Comando de la llamada de prueba: `hermes chat --provider anthropic -m claude-haiku-4-5-20251001 -Q --oneshot --max-turns 1 -q "<mensaje>"`. Piezas útiles ya presentes: `hermes serve` (backend headless), `hermes dashboard` (web), `hermes gateway`, `hermes acp`, `hermes mcp`.
 
 ## Mejoras (de trabajo)
 
