@@ -33,7 +33,6 @@ from typing import Any
 from agent.acp_openai_bridge import (
     build_openai_tool_call, extract_tool_calls_from_text, render_tool_bridge_sections)
 from agent.message_content import flatten_message_text
-from tools.environments.local import hermes_subprocess_env
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +105,25 @@ class CliProtocol:
 
     def explain_failure(self, detail: str) -> tuple[str, int | None]:
         return detail, None
+
+
+def run_cli(command: str, *args: str, protocol: CliProtocol | None = None, timeout: float = 20.0,
+            interactive: bool = False) -> subprocess.CompletedProcess[str]:
+    """One short CLI call (``auth status``, ``login``) under the same sanitised environment as a turn.
+    ``interactive`` hands the user's terminal to the CLI so it can prompt and open the browser itself."""
+    # Deferred: importing tools.environments.local triggers provider discovery, which imports the plugins
+    # that import this module (a cycle when this module is the first one loaded).
+    from hermes_cli._subprocess_compat import windows_hide_flags
+    from tools.environments.local import hermes_subprocess_env
+
+    env = hermes_subprocess_env(inherit_credentials=True)
+    if protocol is not None:
+        protocol.scrub_env(env)
+    if interactive:
+        return subprocess.run([command, *args], env=env, check=False)
+    return subprocess.run(
+        [command, *args], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout,
+        stdin=subprocess.DEVNULL, env=env, creationflags=windows_hide_flags(), check=False)
 
 
 def _digest(*parts: str) -> str:
@@ -273,6 +291,7 @@ class _Session:
 
     def _spawn(self, prompt: str | None) -> None:
         from hermes_cli._subprocess_compat import windows_hide_flags
+        from tools.environments.local import hermes_subprocess_env
 
         ctx = SpawnContext(command=self.client.command, args=self.client.args, model=self.model,
                            instructions_file=self.instructions_file, instructions=self.instructions,
@@ -425,6 +444,8 @@ class CliBrainClient:
         model = (model or "").strip() or None
         session = self._session_for(_digest(self.protocol.name, model or "", instructions), model, instructions)
 
+        if not session.known:
+            session.resume_id = None  # a session that lost its history starts a fresh chat, never a resumed one
         fingerprints = [_fingerprint(m) for m in convo]
         names = _tool_names(convo)
         held = len(session.known)

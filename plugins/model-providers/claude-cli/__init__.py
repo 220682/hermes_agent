@@ -21,19 +21,12 @@ LOGIN_COMMAND = "claude auth login"
 _PLAN_NAMES = {"pro": "Claude Pro", "max": "Claude Max", "team": "Claude Team", "enterprise": "Claude Enterprise"}
 
 
-def _run_cli(command: str, *args: str, timeout: float = 20.0, interactive: bool = False) -> subprocess.CompletedProcess[str]:
-    from hermes_cli._subprocess_compat import windows_hide_flags
-    from tools.environments.local import hermes_subprocess_env
+def _run_cli(command: str, *args: str, interactive: bool = False) -> subprocess.CompletedProcess[str]:
+    from agent.cli_brain import run_cli
 
     from .protocol import ClaudeCodeProtocol
 
-    env = hermes_subprocess_env(inherit_credentials=True)
-    ClaudeCodeProtocol().scrub_env(env)
-    if interactive:  # the user's own terminal: the CLI prompts and opens the browser itself
-        return subprocess.run([command, *args], env=env, check=False)
-    return subprocess.run(
-        [command, *args], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout,
-        stdin=subprocess.DEVNULL, env=env, creationflags=windows_hide_flags(), check=False)
+    return run_cli(command, *args, protocol=ClaudeCodeProtocol(), interactive=interactive)
 
 
 class ClaudeCliProfile(ProviderProfile):

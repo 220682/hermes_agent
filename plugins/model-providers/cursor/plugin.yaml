@@ -1,0 +1,5 @@
+name: cursor-profile
+kind: model-provider
+version: 1.0.0
+description: Cursor's models through the official Cursor Agent CLI, signed in with the user's own Cursor account
+author: Hermes
