@@ -346,3 +346,34 @@ Entorno: sin `edge-tts`, `piper-tts`, `faster-whisper` ni `ffmpeg` (no se instal
 **Verificación:** `npm run check` verde (typecheck, 62 tests vitest, eslint).
 
 **Hallazgos:** (1) el token no entra en el código nuevo (los `fetch` usan cabecera). (2) `speak-stream` con Edge exige `ffmpeg`. (3) el clasificador de permisos bloquea cargar el token de `.env.local` por script; para probar en navegador hay que arrancar serve y Vite a mano o con un token desechable (`VITE_HERMES_TOKEN` en el entorno de Vite tiene prioridad sobre `.env.local`).
+
+
+## Instalación y verificación de voz por API (2026-09-29, autorizada por el Responsable humano)
+
+**F3-01 · Conforme.** Instalado con `pm.sync_venv(['voice','edge-tts','piper'], explicit=True)` (python 3.14.7 del bootstrap; venv `installs/8b051b0194074b03/environments/64f4c0b2c22e459a843399b384c97e64/venv`, el del worktree `local-worker-3`). Primer intento: timeout de red al bajar `tokenizers` (uv, 4 reintentos); segundo intento del mismo comando: correcto. `pyproject.toml` y `uv.lock` intactos.
+
+| Paquete | Versión |
+|---|---|
+| faster-whisper | 1.2.1 |
+| piper-tts | 1.8.0 |
+| edge-tts | 7.2.7 |
+| ctranslate2 / onnxruntime / av / tokenizers | 4.8.1 / 1.29.0 / 18.1.0 / 0.23.1 |
+| sounddevice / numpy | 0.5.5 / 2.4.3 |
+| ffmpeg | 9.0.2 essentials (Gyan) en `%LOCALAPPDATA%\Programs\ffmpeg\ffmpeg-9.0.2-essentials_build\bin`, PATH de usuario |
+
+ffmpeg: `winget install --id Gyan.FFmpeg` se cerró con acceso inválido (-1073741819, incluso `winget search`), sin UAC. Vía alternativa de igual origen: zip del release oficial `GyanD/codexffmpeg` 9.0.2 (114 768 076 bytes, tamaño coincide; el release no publica SHA-256, el calculado es `60F46726...47BA`), extraído en la carpeta de usuario. `ffmpeg -version` responde; el PATH de usuario se verificó en el registro (las terminales ya abiertas no lo ven).
+
+Config: `stt:\n  provider: local` añadido a `%LOCALAPPDATA%\hermes\config.yaml` (no tenía sección `stt`; el modelo por defecto del código es `base`). El resto del archivo no se tocó.
+
+**Mediciones por API** (`hermes serve --port 9291`, token desechable en variable de entorno, sin GPU, frase "Hola, esta es una prueba de voz del agente Hermes en español."):
+
+| Llamada | HTTP | Latencia | Detalle |
+|---|---|---|---|
+| `GET /api/audio/voice-config` | 200 | 0,14 s | stt `relay` (proveedor local), tts `relay` (edge sin cable de cliente) |
+| `POST /api/audio/speak` | 200 | 1,91 s | `audio/mpeg`, 43 867 bytes, proveedor `edge`; sin temporales en `hermes\cache\audio`, `audio_cache` ni `%TEMP%` |
+| `POST /api/audio/transcribe` (1.ª, carga en frío) | 200 | 2,02 s | modelo `base` ya estaba en la caché de HuggingFace desde 2026-08-02: no hubo descarga |
+| `POST /api/audio/transcribe` (2.ª, cálida) | 200 | 1,11 s | igual texto |
+
+Texto transcrito: "Ola, Este es una prueba de voz del Ajante Hermes en español." Frente a la frase original hay 2 errores ("Hola"→"Ola", "agente"→"Ajante"), así que no coincide exacto con `base`. Si se quiere mayor fidelidad, probar `stt.local.model: small` (más lento; no se cambió porque solo se autorizó `stt.provider`).
+
+**Estados:** F3-01 Conforme. F3-04, F3-05 y F3-12 siguen Observados: se midió la ruta del servidor con audio de Edge, no `MediaRecorder`, ni reproducción, ni cola por frases ni panel Sistema en navegador. `speak-stream` (WebSocket con ffmpeg) no se probó. Servidor detenido (`hermes serve --stop`, `Get-NetTCPConnection` sin escuchas en 9291, `--status` sin procesos). Piper instalado pero sin voz descargada ni probado.

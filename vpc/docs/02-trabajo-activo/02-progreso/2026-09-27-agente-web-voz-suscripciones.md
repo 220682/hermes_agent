@@ -179,3 +179,12 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - VAD no implementado (riesgo de eco); decidir si se abre como ítem aparte.
 - Hallazgos: el autodetector de STT del servidor podría usar claves de pago si aparecen; el clasificador de permisos bloqueó cargar el token de `.env.local` por script (usé un backend con token desechable en el puerto 9120, ya detenido); `speak-stream` con Edge necesita ffmpeg.
 - No se tocaron `web/`, `apps/desktop/` ni `tui_gateway/`. Sin push ni merge.
+
+
+## Handoff: instalación y verificación de voz (2026-09-29, Worker)
+
+- Autorizado por el Responsable humano ("2 ok"): instalados faster-whisper 1.2.1, piper-tts 1.8.0, edge-tts 7.2.7 (PM `sync_venv(['voice','edge-tts','piper'], explicit=True)`, tras un reintento por timeout de red) y ffmpeg 9.0.2 (zip oficial GyanD; winget se cerraba con error). PATH de usuario actualizado: abrir terminales nuevas.
+- Config: solo `stt.provider: local` en `%LOCALAPPDATA%\hermes\config.yaml`. `pyproject.toml`/`uv.lock` y el worktree sin cambios.
+- Por API (sin navegador): speak 200 en 1,91 s (Edge, sin temporales); transcribe 2,02 s (frío) y 1,11 s (cálido), modelo `base` ya en caché (sin descarga). El texto sale con 2 errores ("Ola", "Ajante").
+- Estados: F3-01 Conforme; F3-04, F3-05, F3-12 siguen Observados (falta navegador: MediaRecorder, reproducción, cola por frases, panel Sistema). Decisión añadida al Registro (2026-09-29).
+- Pendiente: sesión de tres turnos en navegador (F3-13), decidir `base` vs `small`, probar `speak-stream` y Piper (necesita descargar voz). Servidor de prueba detenido.
