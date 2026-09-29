@@ -188,3 +188,14 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - Por API (sin navegador): speak 200 en 1,91 s (Edge, sin temporales); transcribe 2,02 s (frío) y 1,11 s (cálido), modelo `base` ya en caché (sin descarga). El texto sale con 2 errores ("Ola", "Ajante").
 - Estados: F3-01 Conforme; F3-04, F3-05, F3-12 siguen Observados (falta navegador: MediaRecorder, reproducción, cola por frases, panel Sistema). Decisión añadida al Registro (2026-09-29).
 - Pendiente: sesión de tres turnos en navegador (F3-13), decidir `base` vs `small`, probar `speak-stream` y Piper (necesita descargar voz). Servidor de prueba detenido.
+
+
+## Handoff: corrección de voz F3-C (2026-09-29, Worker)
+
+- Commit `8adfa737a4` en `local-worker-3` (sin push); `npm run check` verde (68 tests). Vite 5173 recarga solo (HMR).
+- `no-speech`: causa probable, doble captura de micrófono (medidor + Web Speech); en modo Chrome ya no se abre el medidor.
+- Sin voz: no hay un camino de código que la omita; corregidos el enrutador recreado por render (repetía la respuesta), el aviso del TTS tapado por el de dictado y el desbloqueo de audio en el clic del interruptor.
+- Nuevo selector "Reconocimiento" (Chrome/Local) con persistencia y botón "Cambiar a reconocimiento local" tras `no-speech`/permiso.
+- Iconos: cabecera = altavoz "Respuestas habladas: sí/no"; compositor = "Dictar".
+- Idioma STT local: el servidor lo ignora en la petición; poner `stt.language: es` en config (no hecho, sin autorización).
+- F3-03/04/05 siguen Observados hasta oírlo en navegador real. No se tocaron backend ni Vite en marcha.
