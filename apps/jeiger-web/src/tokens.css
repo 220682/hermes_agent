@@ -1,0 +1,65 @@
+/* Design tokens from vpc/docs/05-diseno-y-referencias/design.md ("Oro y carmesí").
+   Do not invent a color not listed there; ask before adding one. */
+:root {
+  --jg-bg: #0c0607;
+  --jg-surface: #160a0c;
+  --jg-crimson: #dc2626;
+  --jg-red-light: #f87171;
+  --jg-red-pale: #fecaca;
+  --jg-gold: #f5c542;
+  --jg-gold-light: #fce9a8;
+  --jg-text: #fdecec;
+  --jg-text-secondary: #c9a3a3;
+  --jg-warn: #fb923c;
+
+  --jg-font-display: "Orbitron", sans-serif;
+  --jg-font-body: "Rajdhani", sans-serif;
+  --jg-font-mono: "Share Tech Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--jg-bg);
+  color: var(--jg-text);
+  font-family: var(--jg-font-body);
+}
+
+button,
+input {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+@keyframes jg-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

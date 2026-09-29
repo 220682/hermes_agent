@@ -1,0 +1,287 @@
+/* Orb states per vpc/docs/05-diseno-y-referencias/design.md ("Orbe: tres estados de
+   interacción"). The 4th class (.s-error) is NOT in design.md -- it is a functional
+   error state, not one of the three interaction states, so it borrows the "aviso"
+   token instead of the red/gold family (design.md's own rule). Flagged as a hallazgo
+   in the plan/evidence for confirmation, not invented silently. */
+
+.jg-orb circle,
+.jg-orb rect {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.jg-orb {
+  transition: filter 0.9s ease;
+}
+
+.jg-orb.s-idle {
+  filter: brightness(0.7) saturate(0.8) drop-shadow(0 0 12px rgba(220, 38, 38, 0.18));
+}
+
+.jg-orb.s-thinking {
+  filter: brightness(1.18) saturate(1.2) drop-shadow(0 0 34px rgba(245, 197, 66, 0.55));
+}
+
+.jg-orb.s-responding {
+  filter: brightness(1.02) saturate(1) drop-shadow(0 0 24px rgba(248, 113, 113, 0.4));
+}
+
+.jg-orb.s-error {
+  filter: brightness(0.9) saturate(0.6) drop-shadow(0 0 16px rgba(251, 146, 60, 0.35));
+}
+
+.jg-orb .jg-core,
+.jg-orb .jg-hot-core,
+.jg-orb .jg-arc,
+.jg-orb .jg-thinking-only,
+.jg-orb .jg-responding-only {
+  transition: opacity 0.6s ease;
+}
+
+.jg-orb .jg-hot-core,
+.jg-orb .jg-thinking-only,
+.jg-orb .jg-responding-only {
+  opacity: 0;
+}
+
+.s-idle .jg-ticks {
+  animation: jg-spin 70s linear infinite;
+}
+.s-idle .jg-dash {
+  animation: jg-spin 26s linear infinite reverse;
+}
+.s-idle .jg-arc {
+  animation: jg-spin 18s linear infinite;
+  opacity: 0.75;
+}
+.s-idle .jg-bars {
+  animation: jg-spin 140s linear infinite;
+  opacity: 0.6;
+}
+.s-idle .jg-core {
+  animation: jg-breathe 4.2s ease-in-out infinite;
+}
+.s-idle .jg-halo {
+  animation: jg-halo 4.2s ease-in-out infinite;
+}
+.s-idle .jg-wave {
+  animation: jg-idle-wave 2.6s ease-in-out infinite alternate;
+}
+
+.s-thinking .jg-ticks {
+  animation: jg-spin 16s linear infinite;
+}
+.s-thinking .jg-dash {
+  animation: jg-spin 5s linear infinite reverse;
+}
+.s-thinking .jg-arc {
+  animation: jg-spin 1.8s linear infinite;
+  stroke-width: 6;
+}
+.s-thinking .jg-bars {
+  animation: jg-spin 9s linear infinite reverse;
+}
+.s-thinking .jg-core {
+  opacity: 0;
+}
+.s-thinking .jg-hot-core {
+  opacity: 1;
+  animation: jg-think-core 1.1s ease-in-out infinite;
+}
+.s-thinking .jg-thinking-only {
+  opacity: 1;
+}
+.s-thinking .jg-arc-1 {
+  animation: jg-spin 2.6s linear infinite reverse;
+}
+.s-thinking .jg-arc-2 {
+  animation: jg-spin 3.4s linear infinite;
+}
+.s-thinking .jg-dots {
+  animation: jg-spin 4.5s linear infinite;
+}
+.s-thinking .jg-halo {
+  animation: jg-halo 1.1s ease-in-out infinite;
+}
+.s-thinking .jg-wave {
+  fill: var(--jg-gold-light);
+  animation: jg-scan 1.2s ease-in-out infinite;
+}
+
+.s-responding .jg-ticks {
+  animation: jg-spin 40s linear infinite;
+}
+.s-responding .jg-dash {
+  animation: jg-spin 18s linear infinite reverse;
+}
+.s-responding .jg-arc {
+  opacity: 0;
+}
+.s-responding .jg-core {
+  animation: jg-talk-glow 1.5s ease-in-out infinite;
+}
+.s-responding .jg-halo {
+  animation: jg-halo 1.6s ease-in-out infinite;
+}
+.s-responding .jg-responding-only {
+  opacity: 1;
+}
+.s-responding .jg-bars-a {
+  animation: jg-pulse 0.6s ease-in-out infinite alternate;
+}
+.s-responding .jg-bars-b {
+  animation: jg-pulse 0.8s ease-in-out infinite alternate-reverse;
+}
+.s-responding .jg-bars-c {
+  animation: jg-pulse 0.7s ease-in-out infinite alternate;
+}
+.s-responding .jg-wave {
+  animation: jg-talk-wave 0.5s ease-in-out infinite alternate;
+}
+.s-responding .jg-ripple {
+  animation: jg-ripple 2.4s ease-out infinite;
+}
+.s-responding .jg-ripple-2 {
+  animation-delay: 0.8s;
+}
+.s-responding .jg-ripple-3 {
+  animation-delay: 1.6s;
+}
+
+.jg-w1 {
+  animation-delay: -0.12s !important;
+}
+.jg-w2 {
+  animation-delay: -0.24s !important;
+}
+.jg-w3 {
+  animation-delay: -0.36s !important;
+}
+.jg-w4 {
+  animation-delay: -0.48s !important;
+}
+.jg-w5 {
+  animation-delay: -0.6s !important;
+}
+.jg-w6 {
+  animation-delay: -0.72s !important;
+}
+.jg-w7 {
+  animation-delay: -0.84s !important;
+}
+.jg-w8 {
+  animation-delay: -0.96s !important;
+}
+
+.s-error .jg-halo {
+  fill: rgba(251, 146, 60, 0.16);
+}
+.s-error .jg-ticks,
+.s-error .jg-dash,
+.s-error .jg-arc,
+.s-error .jg-bars {
+  opacity: 0.2;
+}
+.s-error .jg-core {
+  fill: url(#jg-core-error);
+  animation: jg-halo 1.4s ease-in-out infinite;
+}
+
+@keyframes jg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes jg-breathe {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.07);
+    opacity: 1;
+  }
+}
+@keyframes jg-halo {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes jg-idle-wave {
+  from {
+    transform: scaleY(0.5);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes jg-think-core {
+  0%,
+  100% {
+    transform: scale(0.86);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.16);
+    opacity: 1;
+  }
+}
+@keyframes jg-scan {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1.4);
+  }
+}
+@keyframes jg-talk-glow {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+@keyframes jg-talk-wave {
+  from {
+    transform: scaleY(0.3);
+  }
+  to {
+    transform: scaleY(1.5);
+  }
+}
+@keyframes jg-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(1.07);
+    opacity: 1;
+  }
+}
+@keyframes jg-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jg-orb * {
+    animation: none !important;
+  }
+}
