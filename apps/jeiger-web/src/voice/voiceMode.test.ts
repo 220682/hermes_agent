@@ -94,7 +94,7 @@ describe("autonomous loop resilience (F3-21)", () => {
   });
 
   it("reopens the mic only when orb, speech and microphone are all at rest", () => {
-    const rest = { loopOn: true, orb: "idle", speaking: false, micStatus: "idle" } as const;
+    const rest = { loopOn: true, orb: "idle", speaking: false, micStatus: "idle", quietMs: 1000, minQuietMs: 300 } as const;
 
     expect(micReopenReady(rest)).toBe(true);
     expect(micReopenReady({ ...rest, orb: "responding" })).toBe(false);

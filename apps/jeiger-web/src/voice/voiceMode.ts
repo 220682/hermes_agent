@@ -47,7 +47,6 @@ export function usesSilenceDetection(mode: VoiceMode): boolean {
 /** Empty recordings in a row the autonomous loop tolerates before it gives up (F3-21). */
 export const MAX_EMPTY_RECORDINGS = 5;
 
-export const REOPEN_AFTER_REPLY_MS = 400;
 export const REOPEN_AFTER_EMPTY_MS = 300;
 
 export const LOOP_GAVE_UP_MESSAGE = "No te oigo, modo autónomo detenido.";
@@ -85,7 +84,8 @@ export function reduceVoiceLoop(state: VoiceLoopState, event: VoiceLoopEvent): {
       return { state, reopen: state.loopOn };
 
     case "voice.heard":
-      return { state: { ...state, emptyStreak: 0 }, reopen: false };    case "voice.empty": {
+      return { state: { ...state, emptyStreak: 0 }, reopen: false };
+    case "voice.empty": {
       if (!state.loopOn) {
         return { state, reopen: false };
       }
@@ -145,8 +145,12 @@ export function loopPhase(input: {
 export function micReopenReady(input: {
   loopOn: boolean;
   orb: string;
+  /** Audio playing or sentences still queued: the reply is not over until both are done. */
   speaking: boolean;
   micStatus: "idle" | "requesting" | "listening" | "transcribing";
+  /** Time at rest (no turn, no audio) so far, and how much of it is required (echo control, F3-23). */
+  quietMs: number;
+  minQuietMs: number;
 }): boolean {
-  return input.loopOn && input.orb === "idle" && !input.speaking && input.micStatus === "idle";
+  return input.loopOn && input.orb === "idle" && !input.speaking && input.micStatus === "idle" && input.quietMs >= input.minQuietMs;
 }

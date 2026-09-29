@@ -27,6 +27,9 @@ export interface TtsPlayerOptions {
   now?: () => number;
   minSentenceLength?: number;
   onSpeaking?: (speaking: boolean) => void;
+  /** Fired when the player gains or loses work: a sentence queued, synthesizing or playing. Unlike
+   * `onSpeaking` it stays true across the silent gap between two sentences. */
+  onBusy?: (busy: boolean) => void;
   onError?: (error: unknown) => void;
   /** Fired once per reply, when its first audio starts. */
   onFirstAudio?: (metrics: TtsMetrics) => void;
@@ -46,6 +49,7 @@ export class TtsPlayer {
   private stopPlaying: (() => void) | null = null;
   private textDone = false;
   private speaking = false;
+  private busy = false;
   private generation = 0;
   private abort = new AbortController();
   private metrics = emptyMetrics();
@@ -58,6 +62,11 @@ export class TtsPlayer {
 
   get isSpeaking(): boolean {
     return this.speaking;
+  }
+
+  /** Anything left to say: queued, synthesizing, ready or playing. False only once the queue truly drained. */
+  get isBusy(): boolean {
+    return this.pending.length > 0 || this.synthBusy || this.ready.length > 0 || this.stopPlaying !== null;
   }
 
   /** Starts a new reply: whatever was still playing is cut. */
@@ -102,6 +111,7 @@ export class TtsPlayer {
     this.stopPlaying = null;
     stopPlaying?.();
     this.setSpeaking(false);
+    this.syncBusy();
 
     return this.now() - t0;
   }
@@ -126,9 +136,17 @@ export class TtsPlayer {
     }
   }
 
+  private syncBusy(): void {
+    if (this.busy !== this.isBusy) {
+      this.busy = this.isBusy;
+      this.o.onBusy?.(this.busy);
+    }
+  }
+
   private pump(): void {
     this.pumpSynth();
     this.pumpPlay();
+    this.syncBusy();
 
     if (this.textDone && !this.pending.length && !this.synthBusy && !this.ready.length && !this.stopPlaying) {
       this.setSpeaking(false);

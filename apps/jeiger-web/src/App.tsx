@@ -14,12 +14,14 @@ import { createGatewayClient, createSession, gatewayWsUrl, interruptSession, typ
 import { fetchProvidersStatus, type ProvidersStatus, ProvidersStatusError } from "@/providersApi";
 import { recoverSession, type SessionHandle } from "@/sessionRecovery";
 import { readStoredSession, sessionToStore, writeStoredSession } from "@/storedSession";
+import { HEADSET_MODE_LINE, readHeadset, reopenDelayMs, writeHeadset } from "@/voice/echoControl";
 import { HEADSET_LINE, isFloorTooHigh, measureNoiseFloor, voiceLevelFor } from "@/voice/noiseGate";
 import type { OrbAudioDriver } from "@/voice/orbAudio";
 import { readSilenceMs, writeSilenceMs } from "@/voice/silence";
 import { decideSpaceAction } from "@/voice/spaceKey";
 import { fetchVoiceConfig, type VoiceConfigSummary } from "@/voice/speakApi";
 import { createTurnSpeechRouter } from "@/voice/turnSpeech";
+import { useBargeIn } from "@/voice/useBargeIn";
 import { useSpeechOutput } from "@/voice/useSpeechOutput";
 import { useVoiceInput, type VoiceStatus } from "@/voice/useVoiceInput";
 import { classifyMicError, type VoiceIssueCode } from "@/voice/voiceIssues";
@@ -31,7 +33,6 @@ import {
   readVoiceMode,
   reduceVoiceLoop,
   REOPEN_AFTER_EMPTY_MS,
-  REOPEN_AFTER_REPLY_MS,
   usesSilenceDetection,
   type VoiceLoopEvent,
   type VoiceMode,
@@ -323,7 +324,13 @@ export default function App() {
 
   // Spoken replies (F3-05): the orb's voice bars read the TTS analyser while it plays (F3-06).
   const speech = useSpeechOutput({
-    onSpeakingChange: (speaking, analyser) => orbDriverRef.current?.setAnalyser(speaking ? analyser : null),
+    onSpeakingChange: (speaking, analyser) => {
+      orbDriverRef.current?.setAnalyser(speaking ? analyser : null);
+
+      if (!speaking) {
+        quietSinceRef.current = performance.now(); // the last audio just ended: echo control counts from here
+      }
+    },
     onIssue: setSpeechIssue,
   });
 
@@ -374,6 +381,8 @@ export default function App() {
   // Voice modes (F3-16): the autonomous loop reopens the mic after each spoken reply.
   const [voiceMode, setVoiceMode] = useState<VoiceMode>(readVoiceMode);
   const [, setLoopTick] = useState(0); // re-renders when the loop changes; the state itself lives in loopRef only
+  const [headset, setHeadset] = useState(readHeadset);
+  const headsetRef = useRef(headset);
   const [ignoreNoise, setIgnoreNoise] = useState(false);
   const [noiseFloor, setNoiseFloor] = useState<number | null>(null);
   const [measuringNoise, setMeasuringNoise] = useState(false);
@@ -381,6 +390,7 @@ export default function App() {
   const awaitingReplyRef = useRef(false);
   const voiceRef = useRef<{ status: VoiceStatus; toggle: () => Promise<void>; cancel: () => void } | null>(null);
 
+  const quietSinceRef = useRef(0);
   const reopenTimerRef = useRef<number | undefined>(undefined);
 
   const clearReopen = () => {
@@ -390,7 +400,7 @@ export default function App() {
 
   // Reopening is not a single attempt: it waits, polling, until orb, TTS and microphone are all at rest,
   // and gives up only when the loop is switched off.
-  const scheduleReopen = (delayMs: number) => {
+  const scheduleReopen = (minQuietMs: number) => {
     clearReopen();
 
     const attempt = () => {
@@ -403,18 +413,20 @@ export default function App() {
       const ready = micReopenReady({
         loopOn: true,
         orb: orbRef.current,
-        speaking: speakingRef.current,
+        speaking: speakingRef.current || busyRef.current,
         micStatus: voiceRef.current?.status ?? "requesting",
+        quietMs: performance.now() - quietSinceRef.current,
+        minQuietMs,
       });
 
       if (ready) {
         void voiceRef.current?.toggle();
       } else {
-        reopenTimerRef.current = window.setTimeout(attempt, 250);
+        reopenTimerRef.current = window.setTimeout(attempt, 100);
       }
     };
 
-    reopenTimerRef.current = window.setTimeout(attempt, delayMs);
+    reopenTimerRef.current = window.setTimeout(attempt, 50);
   };
 
   useEffect(() => clearReopen, []);
@@ -431,7 +443,11 @@ export default function App() {
     }
 
     if (result.reopen) {
-      scheduleReopen(event.type === "voice.empty" ? REOPEN_AFTER_EMPTY_MS : REOPEN_AFTER_REPLY_MS);
+      if (event.type === "voice.empty") {
+        quietSinceRef.current = performance.now();
+      }
+
+      scheduleReopen(event.type === "voice.empty" ? REOPEN_AFTER_EMPTY_MS : reopenDelayMs(headsetRef.current));
     }
   };
 
@@ -478,9 +494,11 @@ export default function App() {
   };
 
   const speakingRef = useRef(false);
+  const busyRef = useRef(false);
   const micToggleRef = useRef<() => void>(() => {});
 
   speakingRef.current = speech.speaking;
+  busyRef.current = speech.busy;
 
   // Esc interrupts from anywhere: the text field is disabled during a turn, so it cannot own the
   // key. Space is push-to-talk when quiet and a stop while JEIGER thinks or speaks (F3-07/F3-08).
@@ -488,7 +506,7 @@ export default function App() {
     const onKeyDown = (e: KeyboardEvent) => {
       const turnActive = orbRef.current === "thinking" || orbRef.current === "responding";
 
-      if (e.key === "Escape" && (turnActive || speakingRef.current || loopRef.current.loopOn || voiceRef.current?.status === "listening")) {
+      if (e.key === "Escape" && (turnActive || speakingRef.current || busyRef.current || loopRef.current.loopOn || voiceRef.current?.status === "listening")) {
         handleInterruptRef.current();
 
         return;
@@ -546,6 +564,7 @@ export default function App() {
 
   handleSubmitRef.current = handleSubmit;
 
+  const micVoiceLevel = voiceLevelFor(ignoreNoise ? noiseFloor : null);
   const lastAssistant = [...conversation.transcript].reverse().find((entry) => entry.role === "assistant");
   const lastSpokenRef = useRef("");
 
@@ -569,7 +588,7 @@ export default function App() {
       return true;
     },
     silenceMs: usesSilenceDetection(voiceMode) ? silenceMs : null,
-    voiceLevel: voiceLevelFor(ignoreNoise ? noiseFloor : null),
+    voiceLevel: micVoiceLevel,
     onLevel: (level) => {
       if (levelRef.current) {
         levelRef.current.style.transform = `scaleX(${level})`;
@@ -581,16 +600,49 @@ export default function App() {
 
   voiceRef.current = { status: voice.status, toggle: voice.toggle, cancel: voice.cancel };
 
+  // F3-23, headset only: talking over JEIGER cuts the audio (and the turn, if it still streams) and
+  // moves straight to listening. The autonomous loop, if on, keeps going.
+  const handleBargeIn = () => {
+    const sid = sessionIdRef.current;
+    const turnActive = orbRef.current === "thinking" || orbRef.current === "responding";
+    const t0 = performance.now();
+
+    orbRef.current = "idle";
+    awaitingReplyRef.current = false;
+    speech.stop();
+    recordLatency({ cutMs: Math.round((performance.now() - t0) * 10) / 10 });
+    dispatch({ type: "interrupt" });
+
+    if (sid && turnActive) {
+      void interruptSession(clientRef.current, sid);
+    }
+
+    if (voiceRef.current?.status === "idle") {
+      dispatchLoop({ type: "mic.started" });
+      void voiceRef.current.toggle();
+    }
+  };
+
+  useBargeIn({ active: headset && speech.speaking, deviceId: voice.deviceId, voiceLevel: micVoiceLevel, onBarge: handleBargeIn });
+
+  const handleHeadsetToggle = () => {
+    headsetRef.current = !headset;
+    setHeadset(!headset);
+    writeHeadset(!headset);
+  };
+
   // A finished reply (orb idle, nothing left to say) lets the loop reopen the mic; a failed turn or any
   // voice error ends it.
   useEffect(() => {
     if (awaitingReplyRef.current && conversation.orb === "error") {
       dispatchLoopRef.current({ type: "voice.error" });
-    } else if (awaitingReplyRef.current && conversation.orb === "idle" && !speech.speaking) {
+    } else if (awaitingReplyRef.current && conversation.orb === "idle" && !speech.speaking && !speech.busy) {
+      // `busy` closes the gap where the turn is over but the first sentence is still being synthesized.
       awaitingReplyRef.current = false;
+      quietSinceRef.current = Math.max(quietSinceRef.current, performance.now());
       dispatchLoopRef.current({ type: "reply.finished" });
     }
-  }, [conversation.orb, speech.speaking]);
+  }, [conversation.orb, speech.speaking, speech.busy]);
 
   useEffect(() => {
     // Advice ("noise-high") and an empty recording ("no-speech") are not failures: the loop keeps going.
@@ -636,7 +688,7 @@ export default function App() {
     dispatchLoop({ type: "mode.changed", mode });
   };
 
-  const interruptEnabled = conversation.orb === "thinking" || conversation.orb === "responding" || speech.speaking;
+  const interruptEnabled = conversation.orb === "thinking" || conversation.orb === "responding" || speech.speaking || speech.busy;
 
   const canUseMic = !(composerDisabled && voice.status === "idle") || speech.speaking;
 
@@ -787,6 +839,7 @@ export default function App() {
         deviceId={voice.deviceId}
         devices={voice.devices}
         engine={voice.engine}
+        headset={headset}
         ignoreNoise={ignoreNoise}
         issues={[...new Set<VoiceIssueCode | null>([voice.issue, speechIssue, loopRef.current.gaveUp ? "loop-gave-up" : null])].filter((code): code is VoiceIssueCode => code !== null)}
         levelRef={levelRef}
@@ -802,6 +855,7 @@ export default function App() {
           writeSilenceMs(ms);
         }}
         onStopLoop={handleInterrupt}
+        onToggleHeadset={handleHeadsetToggle}
         onToggleIgnoreNoise={() => void handleToggleIgnoreNoise()}
         partial={partial}
         preference={voice.preference}
@@ -810,11 +864,10 @@ export default function App() {
         webSpeechAvailable={voice.webSpeechAvailable}
       />
 
-      {ignoreNoise && (
-        <div role="note" style={{ flexShrink: 0, fontSize: 12, color: "var(--jg-text-secondary)" }}>
-          {HEADSET_LINE}
-        </div>
-      )}
+      <div role="note" style={{ flexShrink: 0, fontSize: 12, color: "var(--jg-text-secondary)" }}>
+        {HEADSET_MODE_LINE[headset ? "on" : "off"]}
+        {ignoreNoise && <div>{HEADSET_LINE}</div>}
+      </div>
 
       <Composer
         disabled={composerDisabled}

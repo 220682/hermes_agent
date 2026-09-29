@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 
+import { HEADSET_MODE_LINE } from "@/voice/echoControl";
 import type { AudioInput } from "@/voice/micStream";
 import { HEADSET_LINE } from "@/voice/noiseGate";
 import { SILENCE_OPTIONS_MS } from "@/voice/silence";
@@ -79,6 +80,9 @@ export interface VoiceStripProps {
   /** What the running loop is doing now (F3-21); null when it is off. */
   loopPhase: LoopPhase | null;
   onStopLoop: () => void;
+  /** F3-23: headset on = fast mic reopening and cutting JEIGER by voice. */
+  headset: boolean;
+  onToggleHeadset: () => void;
   /** F3-17 heuristic gate: on = only levels well above the measured background count as voice. */
   ignoreNoise: boolean;
   measuringNoise: boolean;
@@ -104,7 +108,9 @@ export function VoiceStrip({
   onModeChange,
   loopOn,
   loopPhase,
+  headset,
   onStopLoop,
+  onToggleHeadset,
   ignoreNoise,
   measuringNoise,
   onToggleIgnoreNoise,
@@ -184,6 +190,24 @@ export function VoiceStrip({
           ))}
         </select>
       </label>
+
+      <button
+        aria-pressed={headset}
+        onClick={onToggleHeadset}
+        style={{
+          flexShrink: 0,
+          padding: "2px 8px",
+          fontSize: 12,
+          color: "var(--jg-text)",
+          border: `1px solid ${headset ? "var(--jg-red-light)" : "rgba(220,38,38,0.4)"}`,
+          borderRadius: 6,
+          background: headset ? "rgba(220,38,38,0.35)" : "transparent",
+        }}
+        title={HEADSET_MODE_LINE[headset ? "on" : "off"]}
+        type="button"
+      >
+        Auriculares
+      </button>
 
       {loopOn && loopPhase && (
         <span aria-live="polite" data-testid="loop-phase" style={{ flexShrink: 0, color: "var(--jg-red-pale)", fontWeight: 600 }}>

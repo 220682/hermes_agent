@@ -26,6 +26,7 @@ function readEnabled(): boolean {
 export function useSpeechOutput({ onSpeakingChange, onIssue }: SpeechOutputOptions) {
   const [enabled, setEnabledState] = useState(readEnabled);
   const [speaking, setSpeaking] = useState(false);
+  const [busy, setBusy] = useState(false);
   const enabledRef = useRef(enabled);
   const cbRef = useRef({ onSpeakingChange, onIssue });
   const audioRef = useRef<BrowserAudio | null>(null);
@@ -45,6 +46,7 @@ export function useSpeechOutput({ onSpeakingChange, onIssue }: SpeechOutputOptio
           setSpeaking(value);
           cbRef.current.onSpeakingChange(value, value ? audio.analyser() : null);
         },
+        onBusy: setBusy,
         onError: (error) => cbRef.current.onIssue(classifyPlaybackError(error)),
         onFirstAudio: (m) => {
           if (m.firstSentenceAt !== null && m.firstAudioAt !== null) {
@@ -101,6 +103,8 @@ export function useSpeechOutput({ onSpeakingChange, onIssue }: SpeechOutputOptio
   return {
     enabled,
     speaking,
+    /** True until the whole reply, queued sentences included, has been said (F3-23). */
+    busy,
     setEnabled,
     unlock,
     begin: () => enabledRef.current && getPlayer().begin(),
