@@ -48,3 +48,4 @@ for f in sorted(glob.glob(base+'/**/*.jsonl',recursive=True),key=os.path.getmtim
 | F3-A | `agent-a55264f0` | 32 (39 herramientas) | 126k | 2,8M | Sí. Código completo (36 tests, lint verde); los 6 ítems `Observado` por falta de paquetes de voz, de navegador con micrófono y de prueba humana, no por exceso de consumo |
 | F3-B | `agent-a135ce30` | 53 (62 herramientas) | 186k | 6,9M | Sí (≤ 200k / ≤ 12M). Código y 62 tests vitest verdes; 2 ítems Conforme, 6 Observados por falta de paquetes de voz y navegador |
 | F3-F | `agent-abe723c0` | 31 (37 herramientas) | 139k | 3,1M | Sí. 4 ítems de código (F3-14..F3-17), 96 tests verdes; los 4 quedan Observado por falta de navegador y audio reales |
+| F3-G | `agent-a110c8ef` | 19 (28 herramientas) | 98k | 1,4M | Sí. 3 ítems (F3-18..F3-20), 104 tests verdes; los 3 Observado por falta de navegador |

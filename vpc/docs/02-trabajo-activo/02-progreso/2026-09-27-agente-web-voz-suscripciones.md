@@ -231,3 +231,9 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - Riesgo: la franja de voz tiene más controles (Modo, Silencio, Ignorar sonido); revisar que no se corte a 1280 px.
 - Filas F3-14..F3-17 añadidas a la Punch List (no existían) y decisión registrada.
 - Retomar: `cd .worktrees/local-worker-3/apps/jeiger-web && npm run check`.
+
+### Handoff F3 tanda G (2026-09-29, `local-worker-3`)
+- F3-18/19/20 implementados (commits `cf8ea5c0c9`, `650c037468`); `npm run check` verde (104 tests). Los tres quedan `Observado`: falta prueba manual en el navegador.
+- Clave y cuenta en `localStorage` `jeiger.session`; resume al recargar sin ruido si falla; `hydrate` pinta los mensajes que devuelve `session.resume`.
+- Riesgo: el hot-reload de Vite recarga la página, así que ahora retoma la conversación (esperado).
+- Retomar: `cd .worktrees/local-worker-3/apps/jeiger-web && npm run check`.
