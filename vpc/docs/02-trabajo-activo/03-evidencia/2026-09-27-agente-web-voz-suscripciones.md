@@ -390,3 +390,11 @@ Causas halladas (apps/jeiger-web/src):
 - **D**: selector "Reconocimiento: Chrome (Google) / Local (Whisper en tu equipo)" en la franja de voz, guardado en `localStorage` (`jeiger.sttPreference`, con try/catch); tras `no-speech` o `permission-denied` en modo Chrome aparece el botón "Cambiar a reconocimiento local".
 
 Tests nuevos: `voice/sttChoice.test.ts` (forzar local, persistencia tolerante a fallo de storage, cuándo se ofrece el cambio, idioma, etiquetas distintas de los dos botones).
+
+
+## Evidencia: corrección de interfaz F3-D (2026-09-29, Worker)
+
+- Prueba del Responsable humano en Microsoft Edge 1898x~1000 (capturas 2.png y 3.png): selector y aviso de voz montados sobre el panel ATAJOS.
+- Causa: la raíz tenía `height: 100vh` y `main` con `minHeight: 0`; la columna izquierda (Sistema + Atajos, ~610 px) desbordaba `main` y caía sobre la franja de voz. Sin `position:absolute` involucrado.
+- Corrección (commit `afcb15cf31`, `local-worker-3`): `main` con `flex: 1 1 0` y `minHeight: 640`; la raíz hace scroll vertical si no cabe. Selector de micrófono solo en modo Local; textos "Navegador (Web Speech)" y aviso de privacidad Google/Microsoft; Edge (`Edg/`) usa Local por defecto, respetando la elección guardada.
+- `npm run check` verde (71 tests, incluidos selección de modo por user agent, elección guardada y visibilidad del selector). No verificado visualmente (sin navegador).

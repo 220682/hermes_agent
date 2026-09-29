@@ -199,3 +199,13 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - Iconos: cabecera = altavoz "Respuestas habladas: sí/no"; compositor = "Dictar".
 - Idioma STT local: el servidor lo ignora en la petición; poner `stt.language: es` en config (no hecho, sin autorización).
 - F3-03/04/05 siguen Observados hasta oírlo en navegador real. No se tocaron backend ni Vite en marcha.
+
+
+## Handoff: interfaz de voz F3-D (2026-09-29, Worker)
+
+- Commit `afcb15cf31` en `local-worker-3` (sin push); `npm run check` verde (71 tests). Vite recarga solo.
+- Solapamiento: `main` se encogía bajo `100vh`; ahora `minHeight: 640` y la página hace scroll si hace falta.
+- Selector "Micrófono" solo en modo Local; en modo navegador queda una línea explicativa.
+- Textos: "Navegador (Web Speech)"; privacidad menciona Google (Chrome) y Microsoft (Edge).
+- Edge arranca en Local por defecto (Whisper por `/api/audio/transcribe`); la elección guardada manda.
+- Por confirmar en Edge a 1280/1440/1920 px, con y sin aviso naranja.
