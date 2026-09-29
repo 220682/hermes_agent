@@ -9,12 +9,24 @@ const BUTTON_STYLE = {
   borderRadius: 10,
 } as const;
 
-/** Voice and settings icon buttons of the header (design.md). Voice arrives in F3
- * and settings has no spec yet, so both are disabled placeholders, not invented behaviour. */
-export function HeaderButtons() {
+export interface HeaderButtonsProps {
+  speakReplies: boolean;
+  onToggleSpeak: () => void;
+}
+
+/** Voice and settings icon buttons of the header (design.md). The voice button turns spoken replies
+ * on and off (conversation mode, F3-08); settings has no spec yet, so it stays a disabled placeholder. */
+export function HeaderButtons({ speakReplies, onToggleSpeak }: HeaderButtonsProps) {
   return (
     <>
-      <button aria-label="Voz (disponible en F3)" disabled style={{ ...BUTTON_STYLE, opacity: 0.6 }} type="button">
+      <button
+        aria-label={speakReplies ? "Respuestas habladas: activadas (pulsa para desactivar)" : "Respuestas habladas: desactivadas (pulsa para activar)"}
+        aria-pressed={speakReplies}
+        onClick={onToggleSpeak}
+        style={{ ...BUTTON_STYLE, background: speakReplies ? "rgba(220,38,38,0.4)" : BUTTON_STYLE.background }}
+        title="Respuestas habladas"
+        type="button"
+      >
         <svg aria-hidden="true" fill="none" height="20" stroke="var(--jg-red-pale)" strokeWidth="1.8" viewBox="0 0 24 24" width="20">
           <rect height="12" rx="3" width="6" x="9" y="3" />
           <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />

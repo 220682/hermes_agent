@@ -5,6 +5,7 @@ import { pickRecorderMime, transcribeBlob } from "./localTranscribe";
 import { type AudioInput, closeStream, listAudioInputs, openMic } from "./micStream";
 import { chooseSttEngine, collectTranscript, getRecognizerCtor, type RecognizerLike, type SttEngine } from "./sttEngine";
 import { classifyMicError, classifySpeechError, type VoiceIssueCode } from "./voiceIssues";
+import { recordLatency } from "./voiceMetrics";
 
 export type VoiceStatus = "idle" | "requesting" | "listening" | "transcribing";
 
@@ -98,6 +99,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
       const rec = new Ctor();
       let finalText = "";
       let failed = false;
+      let speechEndedAt: number | null = null;
 
       rec.lang = "es-ES";
       rec.interimResults = true;
@@ -108,9 +110,18 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
 
         if (final) {
           finalText = text;
+
+          if (speechEndedAt !== null) {
+            recordLatency({ sttMs: Math.round(performance.now() - speechEndedAt) }); // F3-12
+            speechEndedAt = null;
+          }
         }
 
         cbRef.current.onPartialText(text);
+      };
+
+      rec.onspeechend = () => {
+        speechEndedAt = performance.now();
       };
 
       rec.onerror = (e) => {
@@ -169,8 +180,12 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
         releaseMic();
         setStatus("transcribing");
 
+        const stoppedAt = performance.now();
+
         transcribeBlob(new Blob(chunks, { type: recorder.mimeType || "audio/webm" }))
           .then((text) => {
+            recordLatency({ sttMs: Math.round(performance.now() - stoppedAt) }); // F3-12
+
             if (text) {
               cbRef.current.onFinalText(text);
             } else {

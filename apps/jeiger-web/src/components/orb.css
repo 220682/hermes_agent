@@ -280,6 +280,14 @@
   }
 }
 
+/* F3-06: while real audio drives the bars (orbAudio.ts sets data-live and their transform),
+   the simulated motion steps aside. */
+.jg-orb[data-live] .jg-wave {
+  animation: none !important;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .jg-orb * {
     animation: none !important;

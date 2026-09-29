@@ -38,6 +38,7 @@ export interface RecognizerLike {
   onresult: ((e: SpeechEventLike) => void) | null;
   onerror: ((e: { error: string }) => void) | null;
   onend: (() => void) | null;
+  onspeechend: (() => void) | null;
   start(): void;
   stop(): void;
   abort(): void;

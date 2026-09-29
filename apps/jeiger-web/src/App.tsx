@@ -9,10 +9,17 @@ import { SystemPanel } from "@/components/SystemPanel";
 import { MicButton, VoiceStrip } from "@/components/VoiceControls";
 import { classifyConnectFailure, type ConnectIssue, connectIssueMessage, reconnectDelayMs } from "@/connectionIssue";
 import { gatewayEventToConversationEvent, type RawGatewayEvent } from "@/conversation/gatewayEvents";
-import { initialConversationState, type OrbState, reduceConversation } from "@/conversation/orbState";
+import { type ConversationEvent, initialConversationState, type OrbState, reduceConversation } from "@/conversation/orbState";
 import { createGatewayClient, createSession, gatewayWsUrl, interruptSession, type ProviderId, submitPrompt } from "@/gateway";
 import { fetchProvidersStatus, type ProvidersStatus, ProvidersStatusError } from "@/providersApi";
+import type { OrbAudioDriver } from "@/voice/orbAudio";
+import { decideSpaceAction } from "@/voice/spaceKey";
+import { fetchVoiceConfig, type VoiceConfigSummary } from "@/voice/speakApi";
+import { createTurnSpeechRouter } from "@/voice/turnSpeech";
+import { useSpeechOutput } from "@/voice/useSpeechOutput";
 import { useVoiceInput } from "@/voice/useVoiceInput";
+import type { VoiceIssueCode } from "@/voice/voiceIssues";
+import { recordLatency } from "@/voice/voiceMetrics";
 
 const ORB_PILL: Record<string, { label: string; color: string }> = {
   idle: { label: "EN REPOSO", color: "var(--jg-crimson)" },
@@ -34,6 +41,10 @@ export default function App() {
   const [tokenRejected, setTokenRejected] = useState(false);
 
   const [partial, setPartial] = useState("");
+  const [voiceConfig, setVoiceConfig] = useState<VoiceConfigSummary | null>(null);
+  const [speechIssue, setSpeechIssue] = useState<VoiceIssueCode | null>(null);
+  const orbDriverRef = useRef<OrbAudioDriver | null>(null);
+  const routeTurnRef = useRef<(event: ConversationEvent) => void>(() => {});
   const levelRef = useRef<HTMLDivElement>(null);
 
   const clientRef = useRef(createGatewayClient());
@@ -85,6 +96,11 @@ export default function App() {
 
       if (mapped) {
         dispatch(mapped);
+
+        // A late chunk after an interrupt must not start speaking again.
+        if (mapped.type !== "turn.delta" || orbRef.current !== "idle") {
+          routeTurnRef.current(mapped);
+        }
       }
     });
 
@@ -204,8 +220,35 @@ export default function App() {
     dispatch({ type: "reset" });
   };
 
+  // Spoken replies (F3-05): the orb's voice bars read the TTS analyser while it plays (F3-06).
+  const speech = useSpeechOutput({
+    onSpeakingChange: (speaking, analyser) => orbDriverRef.current?.setAnalyser(speaking ? analyser : null),
+    onIssue: setSpeechIssue,
+  });
+
+  const speechRef = useRef(speech);
+
+  speechRef.current = speech;
+  routeTurnRef.current = createTurnSpeechRouter({
+    begin: () => speechRef.current.begin(),
+    feed: (delta) => speechRef.current.feed(delta),
+    finish: () => speechRef.current.finish(),
+    stop: () => speechRef.current.stop(),
+  });
+
+  useEffect(() => {
+    if (connection !== "open") {
+      return;
+    }
+
+    fetchVoiceConfig().then(setVoiceConfig, () => setVoiceConfig(null));
+  }, [connection]);
+
   const handleSubmit = async (text: string) => {
     setNotice(null);
+    setSpeechIssue(null);
+    speech.stop(); // a new question cuts whatever is still being said
+    speech.unlock();
     dispatch({ type: "submit", text });
     const sid = (await ensureSession()) ?? sessionIdRef.current;
 
@@ -220,12 +263,18 @@ export default function App() {
     }
   };
 
+  // Button, Esc and Space all land here (F3-07): audio stops first, then the turn is cancelled.
   const handleInterrupt = () => {
     const sid = sessionIdRef.current;
+    const turnActive = orbRef.current === "thinking" || orbRef.current === "responding";
+    const t0 = performance.now();
 
+    orbRef.current = "idle";
+    speech.stop();
+    recordLatency({ cutMs: Math.round((performance.now() - t0) * 10) / 10 });
     dispatch({ type: "interrupt" });
 
-    if (sid) {
+    if (sid && turnActive) {
       void interruptSession(clientRef.current, sid);
     }
   };
@@ -234,12 +283,48 @@ export default function App() {
 
   handleInterruptRef.current = handleInterrupt;
 
-  // Esc interrupts from anywhere: the text field is disabled during a turn, so it
-  // cannot own the key.
+  const speakingRef = useRef(false);
+  const micToggleRef = useRef<() => void>(() => {});
+
+  speakingRef.current = speech.speaking;
+
+  // Esc interrupts from anywhere: the text field is disabled during a turn, so it cannot own the
+  // key. Space is push-to-talk when quiet and a stop while JEIGER thinks or speaks (F3-07/F3-08).
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && (orbRef.current === "thinking" || orbRef.current === "responding")) {
+      const turnActive = orbRef.current === "thinking" || orbRef.current === "responding";
+
+      if (e.key === "Escape" && (turnActive || speakingRef.current)) {
         handleInterruptRef.current();
+
+        return;
+      }
+
+      if (e.code !== "Space") {
+        return;
+      }
+
+      const target = e.target instanceof HTMLElement ? e.target : null;
+
+      const action = decideSpaceAction({
+        repeat: e.repeat,
+        modifier: e.ctrlKey || e.altKey || e.metaKey,
+        targetTag: target?.tagName ?? "",
+        targetEditable: target?.isContentEditable ?? false,
+        turnActive,
+        speaking: speakingRef.current,
+      });
+
+      if (action === "ignore") {
+        return;
+      }
+
+      e.preventDefault();
+
+      if (action === "interrupt") {
+        handleInterruptRef.current();
+      } else {
+        micToggleRef.current();
       }
     };
 
@@ -251,7 +336,8 @@ export default function App() {
   // Dev-only preview of the orb states without a backend: /?orb=thinking
   const forcedOrb = import.meta.env.DEV ? new URLSearchParams(window.location.search).get("orb") : null;
   const orb = forcedOrb && forcedOrb in ORB_PILL ? (forcedOrb as OrbState) : conversation.orb;
-  const pill = ORB_PILL[orb];
+  const speakingOrb = orb === "idle" && speech.speaking ? "responding" : orb;
+  const pill = ORB_PILL[speakingOrb];
   const currentProviderStatus = providersStatus?.[provider] ?? null;
   const providerNeedsLogin = currentProviderStatus !== null && !currentProviderStatus.logged_in;
 
@@ -273,10 +359,30 @@ export default function App() {
       if (levelRef.current) {
         levelRef.current.style.transform = `scaleX(${level})`;
       }
+
+      orbDriverRef.current?.setMicLevel(level);
     },
   });
 
-  const interruptEnabled = conversation.orb === "thinking" || conversation.orb === "responding";
+  const interruptEnabled = conversation.orb === "thinking" || conversation.orb === "responding" || speech.speaking;
+
+  const canUseMic = !(composerDisabled && voice.status === "idle") || speech.speaking;
+
+  const handleMicToggle = () => {
+    speech.unlock();
+
+    if (speech.speaking) {
+      speech.stop(); // talking over JEIGER cuts it
+    }
+
+    void voice.toggle();
+  };
+
+  micToggleRef.current = () => {
+    if (canUseMic) {
+      handleMicToggle();
+    }
+  };
 
   return (
     <div
@@ -313,7 +419,7 @@ export default function App() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <AccountSelector onSelect={handleSelectProvider} selected={provider} status={providersStatus} />
-          <HeaderButtons />
+          <HeaderButtons onToggleSpeak={() => speech.setEnabled(!speech.enabled)} speakReplies={speech.enabled} />
         </div>
       </header>
 
@@ -371,10 +477,10 @@ export default function App() {
       )}
 
       <main style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: 0 }}>
-        <SystemPanel provider={provider} providerStatus={currentProviderStatus} />
+        <SystemPanel provider={provider} providerStatus={currentProviderStatus} speakReplies={speech.enabled} sttEngine={voice.engine} voiceConfig={voiceConfig} />
 
         <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
-          <Orb state={orb} />
+          <Orb driverRef={orbDriverRef} state={speakingOrb} />
           <div style={{ fontFamily: "var(--jg-font-display)", fontWeight: 600, fontSize: 18, letterSpacing: "0.4em", color: pill.color }}>
             {pill.label}
           </div>
@@ -387,7 +493,7 @@ export default function App() {
         deviceId={voice.deviceId}
         devices={voice.devices}
         engine={voice.engine}
-        issue={voice.issue}
+        issue={voice.issue ?? speechIssue}
         levelRef={levelRef}
         onDeviceChange={voice.setDeviceId}
         partial={partial}
@@ -397,7 +503,7 @@ export default function App() {
       <Composer
         disabled={composerDisabled}
         interruptEnabled={interruptEnabled}
-        micSlot={<MicButton disabled={composerDisabled && voice.status === "idle"} onToggle={() => void voice.toggle()} status={voice.status} />}
+        micSlot={<MicButton disabled={!canUseMic} onToggle={handleMicToggle} status={voice.status} />}
         onInterrupt={handleInterrupt}
         onSubmit={handleSubmit}
       />

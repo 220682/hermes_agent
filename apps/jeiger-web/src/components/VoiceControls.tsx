@@ -103,7 +103,7 @@ export function VoiceStrip({ status, engine, issue, partial, devices, deviceId, 
             <span>Micrófono</span>
             <select
               aria-label="Micrófono"
-              disabled={busy}
+              disabled={busy || engine === "web-speech"}
               onChange={(e) => onDeviceChange(e.target.value)}
               style={{ maxWidth: 220, background: "var(--jg-surface)", color: "var(--jg-text)", border: "1px solid rgba(220,38,38,0.4)", borderRadius: 6, padding: "4px 6px" }}
               value={devices.some((d) => d.deviceId === deviceId) ? deviceId : ""}
@@ -118,6 +118,12 @@ export function VoiceStrip({ status, engine, issue, partial, devices, deviceId, 
           </label>
         )}
       </div>
+
+      {engine === "web-speech" && devices.length > 0 && (
+        <div style={{ fontSize: 12, color: "var(--jg-text-secondary)" }}>
+          El selector de micrófono no aplica al reconocimiento de Chrome (Web Speech): usa el micrófono predeterminado de Windows. Solo vale para el modo local.
+        </div>
+      )}
 
       {engine && (
         <div data-testid="privacy-notice" style={{ fontSize: 12, color: "var(--jg-text-secondary)" }}>

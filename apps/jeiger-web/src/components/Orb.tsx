@@ -1,6 +1,9 @@
 import "./orb.css";
 
+import { type RefObject, useEffect, useRef } from "react";
+
 import type { OrbState } from "@/conversation/orbState";
+import { createOrbAudioDriver, type OrbAudioDriver } from "@/voice/orbAudio";
 
 const STATE_CLASS: Record<OrbState, string> = {
   idle: "s-idle",
@@ -18,19 +21,39 @@ const STATE_LABEL: Record<OrbState, string> = {
 
 export interface OrbProps {
   state: OrbState;
+  /** Filled with the driver that moves the voice bars from real audio (F3-06). */
+  driverRef?: RefObject<OrbAudioDriver | null>;
 }
 
 /** SVG structure per design.md: halo, anillo de marcas, anillo fino, anillo punteado,
  * arco, arcos de "pensando", tres anillos de barras, ondas, núcleo, disco interior
- * con nueve barras de voz. In the real app the wave bars will be driven by an
- * AnalyserNode (F3); here they carry the CSS-simulated motion from the approved
+ * con nueve barras de voz. The wave bars are driven by an
+ * AnalyserNode / mic level through `driverRef` (F3-06); without audio they carry the CSS-simulated motion from the approved
  * mockup (Artifact "Rojo 2 — Oro y carmesí"). */
-export function Orb({ state }: OrbProps) {
+export function Orb({ state, driverRef }: OrbProps) {
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    if (!svgRef.current || !driverRef) {
+      return;
+    }
+
+    const driver = createOrbAudioDriver(svgRef.current);
+
+    driverRef.current = driver;
+
+    return () => {
+      driver.dispose();
+      driverRef.current = null;
+    };
+  }, [driverRef]);
+
   return (
     <svg
       aria-label={`Orbe de JEIGER, ${STATE_LABEL[state]}`}
       className={`jg-orb ${STATE_CLASS[state]}`}
       height="360"
+      ref={svgRef}
       role="img"
       viewBox="0 0 560 560"
       width="360"

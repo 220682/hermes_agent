@@ -1,7 +1,10 @@
-import type { CSSProperties } from "react";
+import { type CSSProperties, useSyncExternalStore } from "react";
 
 import type { ProviderId } from "@/gateway";
 import type { ProviderStatus } from "@/providersApi";
+import { isPaidVoiceProvider } from "@/voice/speakApi";
+import type { SttEngine } from "@/voice/sttEngine";
+import { getLatencies, subscribeLatencies } from "@/voice/voiceMetrics";
 
 const BRAIN_LABEL: Record<ProviderId, string> = {
   "claude-cli": "Claude Code · CLI oficial",
@@ -11,7 +14,18 @@ const BRAIN_LABEL: Record<ProviderId, string> = {
 export interface SystemPanelProps {
   provider: ProviderId;
   providerStatus: ProviderStatus | null;
+  sttEngine: SttEngine | null;
+  /** Provider names from GET /api/audio/voice-config, or null while unknown. */
+  voiceConfig: { tts: string; stt: string } | null;
+  speakReplies: boolean;
 }
+
+const STT_LABEL: Record<SttEngine, string> = {
+  "web-speech": "Web Speech · Chrome (es-ES)",
+  local: "Local · faster-whisper",
+};
+
+const ms = (v: number | null) => (v === null ? "sin medir" : `${v} ms`);
 
 const panelStyle: CSSProperties = {
   padding: "16px 18px",
@@ -29,8 +43,10 @@ const labelStyle: CSSProperties = {
   color: "var(--jg-text-secondary)",
 };
 
-export function SystemPanel({ provider, providerStatus }: SystemPanelProps) {
+export function SystemPanel({ provider, providerStatus, sttEngine, voiceConfig, speakReplies }: SystemPanelProps) {
   const loggedIn = providerStatus?.logged_in ?? false;
+  const latencies = useSyncExternalStore(subscribeLatencies, getLatencies);
+  const paidTts = voiceConfig !== null && isPaidVoiceProvider(voiceConfig.tts);
 
   return (
     <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -60,11 +76,28 @@ export function SystemPanel({ provider, providerStatus }: SystemPanelProps) {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={labelStyle}>OÍDO (STT)</span>
-          <span style={{ fontWeight: 600, fontSize: 17 }}>Por definir en F3</span>
+          <span style={{ fontWeight: 600, fontSize: 17 }}>{sttEngine ? STT_LABEL[sttEngine] : "No disponible en este navegador"}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={labelStyle}>VOZ (TTS)</span>
-          <span style={{ fontWeight: 600, fontSize: 17 }}>Por definir en F3</span>
+          <span style={{ fontWeight: 600, fontSize: 17 }}>
+            {speakReplies ? "Activada" : "Desactivada"} · {voiceConfig ? `${voiceConfig.tts} (servidor)` : "consultando…"}
+          </span>
+          {paidTts && (
+            <span role="alert" style={{ fontSize: 13, color: "var(--jg-warn)" }}>
+              Este proveedor es de pago; JEIGER solo usa voces gratuitas (Edge o Piper). Cámbialo en la configuración de Hermes.
+            </span>
+          )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={labelStyle}>LATENCIAS (MEDIDAS)</span>
+          <span data-testid="latencies" style={{ fontFamily: "var(--jg-font-mono)", fontSize: 12, lineHeight: 1.5 }}>
+            STT {ms(latencies.sttMs)}
+            <br />
+            TTS primer audio {ms(latencies.ttsFirstAudioMs)}
+            <br />
+            Corte al interrumpir {ms(latencies.cutMs)}
+          </span>
         </div>
       </div>
 
@@ -79,6 +112,10 @@ export function SystemPanel({ provider, providerStatus }: SystemPanelProps) {
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15 }}>
           <span style={labelStyle}>Interrumpir</span>
           <span style={{ fontFamily: "var(--jg-font-mono)", color: "var(--jg-gold-light)" }}>Esc</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15 }}>
+          <span style={labelStyle}>Hablar / cortar</span>
+          <span style={{ fontFamily: "var(--jg-font-mono)", color: "var(--jg-gold-light)" }}>Espacio</span>
         </div>
       </div>
     </div>
