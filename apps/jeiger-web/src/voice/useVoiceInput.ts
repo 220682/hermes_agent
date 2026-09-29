@@ -15,6 +15,7 @@ import {
   type SttPreference,
   writeSttPreference,
 } from "./sttEngine";
+import { hasEnoughVoice, initialVoiceTally, judgeTranscript, stepVoiceTally } from "./voiceGuard";
 import { classifyMicError, classifySpeechError, type VoiceIssueCode } from "./voiceIssues";
 import { recordLatency } from "./voiceMetrics";
 
@@ -35,6 +36,8 @@ export interface VoiceInputOptions {
   /** F3-21: a recording yielded nothing to send. Returns true when the caller handled it silently
    * (the autonomous loop listens again); otherwise the "no-speech" notice is shown. */
   onEmpty?: () => boolean;
+  /** F3-22: JEIGER's last spoken reply; a transcript that mostly repeats it is its own echo. */
+  lastSpoken?: () => string;
 }
 
 function readSavedDevice(): string {
@@ -45,7 +48,7 @@ function readSavedDevice(): string {
   }
 }
 
-export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel = BASE_VOICE_LEVEL, onEmpty }: VoiceInputOptions) {
+export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel = BASE_VOICE_LEVEL, onEmpty, lastSpoken }: VoiceInputOptions) {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [engine, setEngine] = useState<SttEngine | null>(null);
   const [issue, setIssue] = useState<VoiceIssueCode | null>(null);
@@ -60,9 +63,9 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
   const [preference, setPreferenceState] = useState<SttPreference>(() => readSttPreference());
   const discardRef = useRef(false);
   const frameRef = useRef<((level: number) => void) | null>(null);
-  const cbRef = useRef({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel, onEmpty });
+  const cbRef = useRef({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel, onEmpty, lastSpoken });
 
-  cbRef.current = { onPartialText, onFinalText, onLevel, silenceMs, voiceLevel, onEmpty };
+  cbRef.current = { onPartialText, onFinalText, onLevel, silenceMs, voiceLevel, onEmpty, lastSpoken };
 
   const reportEmpty = useCallback(() => {
     if (!cbRef.current.onEmpty?.()) {
@@ -76,6 +79,20 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
     closeStream(streamRef.current);
     streamRef.current = null;
   }, []);
+
+  /** Every transcript goes through the guard: what it drops is an empty recording, not a message. */
+  const deliverText = useCallback(
+    (raw: string) => {
+      const verdict = judgeTranscript(raw, { lastSpoken: cbRef.current.lastSpoken?.() });
+
+      if (verdict.keep) {
+        cbRef.current.onFinalText(verdict.text);
+      } else {
+        reportEmpty();
+      }
+    },
+    [reportEmpty],
+  );
 
   const refreshDevices = useCallback(() => {
     if (!navigator.mediaDevices?.enumerateDevices) {
@@ -208,7 +225,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
         if (discardRef.current) {
           discardRef.current = false;
         } else if (sent) {
-          cbRef.current.onFinalText(sent);
+          deliverText(sent);
         } else if (!failed) {
           reportEmpty();
         }
@@ -217,7 +234,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
       recognizerRef.current = rec;
       rec.start();
     },
-    [releaseMic, reportEmpty],
+    [releaseMic, reportEmpty, deliverText],
   );
 
   const startLocal = useCallback(
@@ -234,8 +251,11 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
 
       // F3-15: the level meter's frames decide when the pause is long enough to stop and transcribe.
       let silence = initialSilenceState;
+      let tally = initialVoiceTally;
 
       frameRef.current = (level) => {
+        tally = stepVoiceTally(tally, { level, now: performance.now() }, cbRef.current.voiceLevel);
+
         const limit = cbRef.current.silenceMs;
 
         if (limit === null) {
@@ -270,6 +290,14 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
           return;
         }
 
+        // F3-22a: not enough voice above the level means noise or a false trigger; nothing to transcribe.
+        if (!hasEnoughVoice(tally)) {
+          setStatus("idle");
+          reportEmpty();
+
+          return;
+        }
+
         setStatus("transcribing");
 
         const stoppedAt = performance.now();
@@ -278,11 +306,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
           .then((text) => {
             recordLatency({ sttMs: Math.round(performance.now() - stoppedAt) }); // F3-12
 
-            if (text) {
-              cbRef.current.onFinalText(text);
-            } else {
-              reportEmpty();
-            }
+            deliverText(text);
           })
           .catch(() => setIssue("stt-unavailable"))
           .finally(() => setStatus("idle"));
@@ -291,7 +315,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
       recorderRef.current = recorder;
       recorder.start();
     },
-    [releaseMic, reportEmpty],
+    [releaseMic, reportEmpty, deliverText],
   );
 
   /** Esc / Detener: closes the mic without sending what was heard. */

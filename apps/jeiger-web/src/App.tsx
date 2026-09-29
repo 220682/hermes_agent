@@ -546,6 +546,11 @@ export default function App() {
 
   handleSubmitRef.current = handleSubmit;
 
+  const lastAssistant = [...conversation.transcript].reverse().find((entry) => entry.role === "assistant");
+  const lastSpokenRef = useRef("");
+
+  lastSpokenRef.current = lastAssistant?.text ?? "";
+
   const voice = useVoiceInput({
     onPartialText: setPartial,
     onFinalText: (text) => {
@@ -553,6 +558,7 @@ export default function App() {
       dispatchLoopRef.current({ type: "voice.heard" });
       void handleSubmitRef.current(text);
     },
+    lastSpoken: () => lastSpokenRef.current,
     onEmpty: () => {
       if (!loopRef.current.loopOn) {
         return false;
