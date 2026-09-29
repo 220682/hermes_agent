@@ -19,9 +19,10 @@ import { decideSpaceAction } from "@/voice/spaceKey";
 import { fetchVoiceConfig, type VoiceConfigSummary } from "@/voice/speakApi";
 import { createTurnSpeechRouter } from "@/voice/turnSpeech";
 import { useSpeechOutput } from "@/voice/useSpeechOutput";
-import { useVoiceInput } from "@/voice/useVoiceInput";
+import { useVoiceInput, type VoiceStatus } from "@/voice/useVoiceInput";
 import type { VoiceIssueCode } from "@/voice/voiceIssues";
 import { recordLatency } from "@/voice/voiceMetrics";
+import { initialVoiceLoop, readVoiceMode, reduceVoiceLoop, usesSilenceDetection, type VoiceLoopEvent, type VoiceMode, writeVoiceMode } from "@/voice/voiceMode";
 
 const ORB_PILL: Record<string, { label: string; color: string }> = {
   idle: { label: "EN REPOSO", color: "var(--jg-crimson)" },
@@ -318,6 +319,39 @@ export default function App() {
     }
   };
 
+  // Voice modes (F3-16): the autonomous loop reopens the mic after each spoken reply.
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>(readVoiceMode);
+  const [loopOn, setLoopOn] = useState(false);
+  const loopRef = useRef(initialVoiceLoop(voiceMode));
+  const awaitingReplyRef = useRef(false);
+  const voiceRef = useRef<{ status: VoiceStatus; toggle: () => Promise<void>; cancel: () => void } | null>(null);
+
+  const dispatchLoop = (event: VoiceLoopEvent) => {
+    const result = reduceVoiceLoop(loopRef.current, event);
+
+    loopRef.current = result.state;
+    setLoopOn(result.state.loopOn);
+
+    if (!result.state.loopOn) {
+      awaitingReplyRef.current = false;
+    }
+
+    if (result.reopen) {
+      // Small delay: the TTS can start a moment after the turn ends, and must not be recorded.
+      window.setTimeout(() => {
+        const idle = orbRef.current === "idle" && !speakingRef.current && voiceRef.current?.status === "idle";
+
+        if (loopRef.current.loopOn && idle) {
+          void voiceRef.current?.toggle();
+        }
+      }, 400);
+    }
+  };
+
+  const dispatchLoopRef = useRef(dispatchLoop);
+
+  dispatchLoopRef.current = dispatchLoop;
+
   // Button, Esc and Space all land here (F3-07): audio stops first, then the turn is cancelled.
   const handleInterrupt = () => {
     const sid = sessionIdRef.current;
@@ -325,6 +359,8 @@ export default function App() {
     const t0 = performance.now();
 
     orbRef.current = "idle";
+    dispatchLoop({ type: "user.stopped" }); // an interrupt ends the autonomous loop and never reopens the mic
+    voiceRef.current?.cancel();
     speech.stop();
     recordLatency({ cutMs: Math.round((performance.now() - t0) * 10) / 10 });
     dispatch({ type: "interrupt" });
@@ -349,7 +385,7 @@ export default function App() {
     const onKeyDown = (e: KeyboardEvent) => {
       const turnActive = orbRef.current === "thinking" || orbRef.current === "responding";
 
-      if (e.key === "Escape" && (turnActive || speakingRef.current)) {
+      if (e.key === "Escape" && (turnActive || speakingRef.current || loopRef.current.loopOn || voiceRef.current?.status === "listening")) {
         handleInterruptRef.current();
 
         return;
@@ -409,8 +445,11 @@ export default function App() {
 
   const voice = useVoiceInput({
     onPartialText: setPartial,
-    onFinalText: (text) => void handleSubmitRef.current(text),
-    silenceMs,
+    onFinalText: (text) => {
+      awaitingReplyRef.current = loopRef.current.loopOn;
+      void handleSubmitRef.current(text);
+    },
+    silenceMs: usesSilenceDetection(voiceMode) ? silenceMs : null,
     onLevel: (level) => {
       if (levelRef.current) {
         levelRef.current.style.transform = `scaleX(${level})`;
@@ -419,6 +458,31 @@ export default function App() {
       orbDriverRef.current?.setMicLevel(level);
     },
   });
+
+  voiceRef.current = { status: voice.status, toggle: voice.toggle, cancel: voice.cancel };
+
+  // A finished reply (orb idle, nothing left to say) lets the loop reopen the mic; a failed turn or any
+  // voice error ends it.
+  useEffect(() => {
+    if (awaitingReplyRef.current && conversation.orb === "error") {
+      dispatchLoopRef.current({ type: "voice.error" });
+    } else if (awaitingReplyRef.current && conversation.orb === "idle" && !speech.speaking) {
+      awaitingReplyRef.current = false;
+      dispatchLoopRef.current({ type: "reply.finished" });
+    }
+  }, [conversation.orb, speech.speaking]);
+
+  useEffect(() => {
+    if (voice.issue !== null || speechIssue !== null) {
+      dispatchLoopRef.current({ type: "voice.error" });
+    }
+  }, [voice.issue, speechIssue]);
+
+  const handleModeChange = (mode: VoiceMode) => {
+    setVoiceMode(mode);
+    writeVoiceMode(mode);
+    dispatchLoop({ type: "mode.changed", mode });
+  };
 
   const interruptEnabled = conversation.orb === "thinking" || conversation.orb === "responding" || speech.speaking;
 
@@ -429,6 +493,10 @@ export default function App() {
 
     if (speech.speaking) {
       speech.stop(); // talking over JEIGER cuts it
+    }
+
+    if (voice.status === "idle") {
+      dispatchLoop({ type: "mic.started" });
     }
 
     void voice.toggle();
@@ -553,12 +621,16 @@ export default function App() {
         engine={voice.engine}
         issues={[...new Set([voice.issue, speechIssue])].filter((code): code is VoiceIssueCode => code !== null)}
         levelRef={levelRef}
+        loopOn={loopOn}
+        mode={voiceMode}
         onDeviceChange={voice.setDeviceId}
+        onModeChange={handleModeChange}
         onPreferenceChange={voice.setPreference}
         onSilenceChange={(ms) => {
           setSilenceMs(ms);
           writeSilenceMs(ms);
         }}
+        onStopLoop={handleInterrupt}
         partial={partial}
         preference={voice.preference}
         silenceMs={silenceMs}

@@ -28,8 +28,8 @@ export interface VoiceInputOptions {
   onFinalText: (text: string) => void;
   /** Written on every animation frame; must not touch React state. */
   onLevel: (level: number) => void;
-  /** F3-15: pause that ends a phrase, ms. */
-  silenceMs: number;
+  /** F3-15: pause that ends a phrase, ms; null (manual mode, F3-16) = only the user ends it. */
+  silenceMs: number | null;
   /** F3-17: mic level that counts as voice (local engine). Defaults to the base level. */
   voiceLevel?: number;
 }
@@ -55,6 +55,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const webSpeechFailedRef = useRef(false);
   const [preference, setPreferenceState] = useState<SttPreference>(() => readSttPreference());
+  const discardRef = useRef(false);
   const frameRef = useRef<((level: number) => void) | null>(null);
   const cbRef = useRef({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel });
 
@@ -135,7 +136,9 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
       // continuous = true: the browser no longer decides when the phrase is over. A timer that every
       // result restarts does (F3-15); when it is due the recognizer is closed and the text sent.
       const timer = window.setInterval(() => {
-        if (silenceTimerDue(lastResultAt, performance.now(), cbRef.current.silenceMs)) {
+        const limit = cbRef.current.silenceMs;
+
+        if (limit !== null && silenceTimerDue(lastResultAt, performance.now(), limit)) {
           window.clearInterval(timer);
           rec.stop();
         }
@@ -168,6 +171,10 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
       };
 
       rec.onerror = (e) => {
+        if (e.error === "aborted") {
+          return; // our own cancel (Esc / Detener), not a failure
+        }
+
         failed = true;
 
         const code = classifySpeechError(e.error);
@@ -187,9 +194,11 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
         setStatus("idle");
         cbRef.current.onPartialText("");
 
-        const sent = finalText || lastText;
+        const sent = discardRef.current ? "" : finalText || lastText;
 
-        if (sent) {
+        if (discardRef.current) {
+          discardRef.current = false;
+        } else if (sent) {
           cbRef.current.onFinalText(sent);
         } else if (!failed) {
           setIssue("no-speech");
@@ -218,7 +227,13 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
       let silence = initialSilenceState;
 
       frameRef.current = (level) => {
-        const step = stepSilence(silence, { level, now: performance.now() }, { silenceMs: cbRef.current.silenceMs, voiceLevel: cbRef.current.voiceLevel });
+        const limit = cbRef.current.silenceMs;
+
+        if (limit === null) {
+          return;
+        }
+
+        const step = stepSilence(silence, { level, now: performance.now() }, { silenceMs: limit, voiceLevel: cbRef.current.voiceLevel });
 
         silence = step.state;
 
@@ -238,6 +253,14 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
         frameRef.current = null;
         recorderRef.current = null;
         releaseMic();
+
+        if (discardRef.current) {
+          discardRef.current = false;
+          setStatus("idle");
+
+          return;
+        }
+
         setStatus("transcribing");
 
         const stoppedAt = performance.now();
@@ -262,6 +285,17 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
     [releaseMic],
   );
 
+  /** Esc / Detener: closes the mic without sending what was heard. */
+  const cancel = useCallback(() => {
+    if (recognizerRef.current) {
+      discardRef.current = true;
+      recognizerRef.current.abort();
+    } else if (recorderRef.current?.state === "recording") {
+      discardRef.current = true;
+      recorderRef.current.stop();
+    }
+  }, []);
+
   const toggle = useCallback(async () => {
     if (status === "listening") {
       recognizerRef.current?.stop();
@@ -278,6 +312,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
     }
 
     setIssue(null);
+    discardRef.current = false;
 
     const Ctor = getRecognizerCtor(window);
 
@@ -359,6 +394,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
     deviceId,
     setDeviceId,
     toggle,
+    cancel,
     dismissIssue: () => setIssue(null),
   };
 }

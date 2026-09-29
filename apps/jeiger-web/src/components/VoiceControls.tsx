@@ -6,6 +6,7 @@ import { offersLocalSwitch, PRIVACY_NOTICE, showsMicSelector, STT_PREFERENCE_LAB
 import type { VoiceStatus } from "@/voice/useVoiceInput";
 import { type VoiceIssueCode, voiceIssueMessage } from "@/voice/voiceIssues";
 import { MIC_LABEL } from "@/voice/voiceLabels";
+import { VOICE_MODE_HINT, VOICE_MODE_LABEL, VOICE_MODES, type VoiceMode } from "@/voice/voiceMode";
 
 const PRIVACY_SHORT: Record<SttEngine, string> = {
   "web-speech": "Audio: servicio del navegador",
@@ -70,6 +71,11 @@ export interface VoiceStripProps {
   onDeviceChange: (id: string) => void;
   silenceMs: number;
   onSilenceChange: (ms: number) => void;
+  mode: VoiceMode;
+  onModeChange: (mode: VoiceMode) => void;
+  /** The autonomous loop is running: shows the Detener button. */
+  loopOn: boolean;
+  onStopLoop: () => void;
 }
 
 /** Live transcript, level bar, mic selector, privacy notice and error notice (F3-02/03/09/13). */
@@ -87,6 +93,10 @@ export function VoiceStrip({
   onDeviceChange,
   silenceMs,
   onSilenceChange,
+  mode,
+  onModeChange,
+  loopOn,
+  onStopLoop,
 }: VoiceStripProps) {
   const busy = status !== "idle";
 
@@ -153,9 +163,31 @@ export function VoiceStrip({
         </label>
       )}
 
-      <label style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }} title="Pausa que da por terminada la frase">
+      <label style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }} title={VOICE_MODE_HINT[mode]}>
+        <span>Modo</span>
+        <select aria-label="Modo de voz" disabled={busy || loopOn} onChange={(e) => onModeChange(e.target.value as VoiceMode)} style={selectStyle} value={mode}>
+          {VOICE_MODES.map((m) => (
+            <option key={m} value={m}>
+              {VOICE_MODE_LABEL[m]}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {loopOn && (
+        <button
+          aria-label="Detener el modo autónomo"
+          onClick={onStopLoop}
+          style={{ flexShrink: 0, padding: "2px 10px", fontSize: 12, fontWeight: 600, color: "var(--jg-text)", border: "1px solid var(--jg-red-light)", borderRadius: 6, background: "rgba(220,38,38,0.35)" }}
+          type="button"
+        >
+          Detener
+        </button>
+      )}
+
+      <label style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, opacity: mode === "manual" ? 0.5 : 1 }} title={mode === "manual" ? "En modo Manual no hay detección de silencio" : "Pausa que da por terminada la frase"}>
         <span>Silencio</span>
-        <select aria-label="Silencio antes de enviar" disabled={busy} onChange={(e) => onSilenceChange(Number(e.target.value))} style={selectStyle} value={silenceMs}>
+        <select aria-label="Silencio antes de enviar" disabled={busy || mode === "manual"} onChange={(e) => onSilenceChange(Number(e.target.value))} style={selectStyle} value={silenceMs}>
           {SILENCE_OPTIONS_MS.map((ms) => (
             <option key={ms} value={ms}>
               {String(ms / 1000).replace(".", ",")} s
