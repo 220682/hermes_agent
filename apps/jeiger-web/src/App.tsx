@@ -14,6 +14,7 @@ import { createGatewayClient, createSession, gatewayWsUrl, interruptSession, typ
 import { fetchProvidersStatus, type ProvidersStatus, ProvidersStatusError } from "@/providersApi";
 import { recoverSession, type SessionHandle } from "@/sessionRecovery";
 import type { OrbAudioDriver } from "@/voice/orbAudio";
+import { readSilenceMs, writeSilenceMs } from "@/voice/silence";
 import { decideSpaceAction } from "@/voice/spaceKey";
 import { fetchVoiceConfig, type VoiceConfigSummary } from "@/voice/speakApi";
 import { createTurnSpeechRouter } from "@/voice/turnSpeech";
@@ -42,6 +43,7 @@ export default function App() {
   const [tokenRejected, setTokenRejected] = useState(false);
 
   const [partial, setPartial] = useState("");
+  const [silenceMs, setSilenceMs] = useState(readSilenceMs);
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfigSummary | null>(null);
   const [speechIssue, setSpeechIssue] = useState<VoiceIssueCode | null>(null);
   const orbDriverRef = useRef<OrbAudioDriver | null>(null);
@@ -408,6 +410,7 @@ export default function App() {
   const voice = useVoiceInput({
     onPartialText: setPartial,
     onFinalText: (text) => void handleSubmitRef.current(text),
+    silenceMs,
     onLevel: (level) => {
       if (levelRef.current) {
         levelRef.current.style.transform = `scaleX(${level})`;
@@ -552,8 +555,13 @@ export default function App() {
         levelRef={levelRef}
         onDeviceChange={voice.setDeviceId}
         onPreferenceChange={voice.setPreference}
+        onSilenceChange={(ms) => {
+          setSilenceMs(ms);
+          writeSilenceMs(ms);
+        }}
         partial={partial}
         preference={voice.preference}
+        silenceMs={silenceMs}
         status={voice.status}
         webSpeechAvailable={voice.webSpeechAvailable}
       />

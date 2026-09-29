@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { startLevelMeter } from "./levelMeter";
 import { pickRecorderMime, transcribeBlob } from "./localTranscribe";
 import { type AudioInput, closeStream, listAudioInputs, openMic } from "./micStream";
+import { BASE_VOICE_LEVEL, initialSilenceState, silenceTimerDue, stepSilence } from "./silence";
 import {
   chooseSttEngine,
   collectTranscript,
@@ -27,6 +28,10 @@ export interface VoiceInputOptions {
   onFinalText: (text: string) => void;
   /** Written on every animation frame; must not touch React state. */
   onLevel: (level: number) => void;
+  /** F3-15: pause that ends a phrase, ms. */
+  silenceMs: number;
+  /** F3-17: mic level that counts as voice (local engine). Defaults to the base level. */
+  voiceLevel?: number;
 }
 
 function readSavedDevice(): string {
@@ -37,7 +42,7 @@ function readSavedDevice(): string {
   }
 }
 
-export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInputOptions) {
+export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel = BASE_VOICE_LEVEL }: VoiceInputOptions) {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [engine, setEngine] = useState<SttEngine | null>(null);
   const [issue, setIssue] = useState<VoiceIssueCode | null>(null);
@@ -50,9 +55,10 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
   const recorderRef = useRef<MediaRecorder | null>(null);
   const webSpeechFailedRef = useRef(false);
   const [preference, setPreferenceState] = useState<SttPreference>(() => readSttPreference());
-  const cbRef = useRef({ onPartialText, onFinalText, onLevel });
+  const frameRef = useRef<((level: number) => void) | null>(null);
+  const cbRef = useRef({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel });
 
-  cbRef.current = { onPartialText, onFinalText, onLevel };
+  cbRef.current = { onPartialText, onFinalText, onLevel, silenceMs, voiceLevel };
 
   const releaseMic = useCallback(() => {
     stopMeterRef.current?.();
@@ -122,14 +128,28 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
       const rec = new Ctor();
       let finalText = "";
       let failed = false;
+      let lastText = "";
       let speechEndedAt: number | null = null;
+      let lastResultAt: number | null = null;
+
+      // continuous = true: the browser no longer decides when the phrase is over. A timer that every
+      // result restarts does (F3-15); when it is due the recognizer is closed and the text sent.
+      const timer = window.setInterval(() => {
+        if (silenceTimerDue(lastResultAt, performance.now(), cbRef.current.silenceMs)) {
+          window.clearInterval(timer);
+          rec.stop();
+        }
+      }, 200);
 
       rec.lang = speechRecognitionLang(navigator.language);
       rec.interimResults = true;
-      rec.continuous = false;
+      rec.continuous = true;
 
       rec.onresult = (e) => {
         const { text, final } = collectTranscript(e);
+
+        lastText = text;
+        lastResultAt = performance.now();
 
         if (final) {
           finalText = text;
@@ -161,13 +181,16 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
       };
 
       rec.onend = () => {
+        window.clearInterval(timer);
         recognizerRef.current = null;
         releaseMic();
         setStatus("idle");
         cbRef.current.onPartialText("");
 
-        if (finalText) {
-          cbRef.current.onFinalText(finalText);
+        const sent = finalText || lastText;
+
+        if (sent) {
+          cbRef.current.onFinalText(sent);
         } else if (!failed) {
           setIssue("no-speech");
         }
@@ -191,6 +214,19 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
         }
       }, MAX_LOCAL_RECORDING_MS);
 
+      // F3-15: the level meter's frames decide when the pause is long enough to stop and transcribe.
+      let silence = initialSilenceState;
+
+      frameRef.current = (level) => {
+        const step = stepSilence(silence, { level, now: performance.now() }, { silenceMs: cbRef.current.silenceMs, voiceLevel: cbRef.current.voiceLevel });
+
+        silence = step.state;
+
+        if (step.done && recorder.state === "recording") {
+          recorder.stop();
+        }
+      };
+
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunks.push(e.data);
@@ -199,6 +235,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
 
       recorder.onstop = () => {
         window.clearTimeout(timer);
+        frameRef.current = null;
         recorderRef.current = null;
         releaseMic();
         setStatus("transcribing");
@@ -286,7 +323,10 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
     }
 
     streamRef.current = stream;
-    stopMeterRef.current = startLevelMeter(stream, (level) => cbRef.current.onLevel(level));
+    stopMeterRef.current = startLevelMeter(stream, (level) => {
+      cbRef.current.onLevel(level);
+      frameRef.current?.(level);
+    });
     refreshDevices(); // labels only exist after permission
     setEngine(chosen);
     setStatus("listening");

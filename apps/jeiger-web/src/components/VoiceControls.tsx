@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 
 import type { AudioInput } from "@/voice/micStream";
+import { SILENCE_OPTIONS_MS } from "@/voice/silence";
 import { offersLocalSwitch, PRIVACY_NOTICE, showsMicSelector, STT_PREFERENCE_LABEL, type SttEngine, type SttPreference } from "@/voice/sttEngine";
 import type { VoiceStatus } from "@/voice/useVoiceInput";
 import { type VoiceIssueCode, voiceIssueMessage } from "@/voice/voiceIssues";
@@ -67,6 +68,8 @@ export interface VoiceStripProps {
   deviceId: string;
   levelRef: RefObject<HTMLDivElement | null>;
   onDeviceChange: (id: string) => void;
+  silenceMs: number;
+  onSilenceChange: (ms: number) => void;
 }
 
 /** Live transcript, level bar, mic selector, privacy notice and error notice (F3-02/03/09/13). */
@@ -82,6 +85,8 @@ export function VoiceStrip({
   deviceId,
   levelRef,
   onDeviceChange,
+  silenceMs,
+  onSilenceChange,
 }: VoiceStripProps) {
   const busy = status !== "idle";
 
@@ -147,6 +152,17 @@ export function VoiceStrip({
           </select>
         </label>
       )}
+
+      <label style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }} title="Pausa que da por terminada la frase">
+        <span>Silencio</span>
+        <select aria-label="Silencio antes de enviar" disabled={busy} onChange={(e) => onSilenceChange(Number(e.target.value))} style={selectStyle} value={silenceMs}>
+          {SILENCE_OPTIONS_MS.map((ms) => (
+            <option key={ms} value={ms}>
+              {String(ms / 1000).replace(".", ",")} s
+            </option>
+          ))}
+        </select>
+      </label>
 
       {engine && (
         <span data-testid="privacy-notice" style={{ flexShrink: 0 }} title={PRIVACY_NOTICE[engine]}>
