@@ -10,6 +10,12 @@ Lee primero `00-reglas-de-contexto.md`. Requiere la tanda A cerrada (handoff en 
 - `session.create` acepta `provider: "claude-cli" | "cursor"` y `model`; `session.interrupt` cancela; streaming `message.start` (sin payload) → `message.delta` (`text`) → `message.complete` (`text`, `usage`, `status: complete|error|interrupted`).
 - Windows: lanzar servidores con `nohup … &` y verificar con PowerShell nativo.
 
+## Regla de seguridad del token (nueva, 2026-09-29)
+
+- El token de sesión se rotó el 2026-09-29 porque el anterior quedó en logs de Playwright subidos a `origin`. `apps/jeiger-web/.env.local` (ignorado por git) tiene el token vigente: **no lo leas ni lo imprimas**; usa `HERMES_DASHBOARD_SESSION_TOKEN` cargándolo por script sin mostrarlo.
+- Hallazgo de la tanda A: `src/gateway.ts` pone el token en `?token=` de la URL del WebSocket y aparece en los logs de consola de Playwright. Los navegadores no permiten cabeceras en el handshake WS, así que la URL con token es inevitable en la conexión, pero **no debe persistir ni loguearse**: no guardarla en `localStorage`, ni escribirla en `console.*`, ni dejarla en el historial; enmascarar `token=` en cualquier mensaje de error que la incluya. Comprobar con `read_console_messages`/`browser_console_messages` que ninguna línea contiene el valor.
+- `.playwright-mcp/` está ahora en `.gitignore`. No leas archivos de esa carpeta; nunca los commitees.
+
 ## Ítems de la tanda
 
 | ID | Qué debe cumplirse | Evidencia |

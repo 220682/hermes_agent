@@ -319,3 +319,6 @@ native/fts5_cjk/*.so
 /pm/.lock.json.lock
 
 apps/desktop/.dist-build*
+
+# Playwright MCP session output (may contain session tokens)
+.playwright-mcp/

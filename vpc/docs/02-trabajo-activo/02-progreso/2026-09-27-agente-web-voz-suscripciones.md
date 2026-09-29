@@ -125,3 +125,11 @@ Continuando con el resto de F2 (scaffold de `apps/jeiger-web/`, layout y tokens 
 ### Handoff — 2026-09-28, Worker fase 2 (parcial, sesión cortada por límite de uso y reanudada)
 
 Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta todo el frontend de `apps/jeiger-web/` y el resto de la Punch List de F2. Sin bloqueos de negocio. Riesgo de entorno anotado arriba (PATH de Cursor en esta terminal). Continúo con el scaffold de la app.
+
+### Handoff F2 tanda A (2026-09-29, Worker local-worker-2)
+- Conforme: F2-02, F2-04, F2-05, F2-17. Observado: F2-03 (falta cotejo con el mockup por el Responsable humano).
+- Commit `7e93fd3e75` en `local-worker-2` (columnas 300/380, botones de cabecera, `?orb=` solo DEV, puerto 5173 estricto).
+- Retomar: `cd .worktrees/local-worker-2/apps/jeiger-web; npm run check; npm run dev` y abrir `http://localhost:5173/?orb=thinking`.
+- Falta (tanda B/C): chat real, selector con estado real, interrupción, errores, accesibilidad completa, responsive, arranque documentado.
+- Hallazgos: estado `error` del orbe no está en design.md; `jeiger_frontend.log` versionado; el token va en `?token=` de la URL del WS (visible en logs de consola).
+- Capturas en `03-evidencia/capturas/f2a-*.jpg` (sin commitear).

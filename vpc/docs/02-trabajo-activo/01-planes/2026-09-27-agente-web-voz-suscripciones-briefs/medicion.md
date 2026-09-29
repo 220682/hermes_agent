@@ -41,7 +41,7 @@ for f in sorted(glob.glob(base+'/**/*.jsonl',recursive=True),key=os.path.getmtim
 
 | Tanda | Sesión | Llamadas | Contexto máx. | Leído de caché | ¿Cumple meta? |
 |---|---|---|---|---|---|
-| F2-A | | | | | |
+| F2-A | `agent-acc09511` | 21 (32 herramientas) | 93k | 1,5M | Sí (meta: ≤ 80 / ≤ 200k / ≤ 12M). Frente a la línea base del Worker de F2 (191 / 625k / 97,4M): ~65 veces menos tokens de caché. Cerró 4 ítems Conforme y 1 Observado |
 | F2-B | | | | | |
 | F2-C | | | | | |
 | F3-A | | | | | |
