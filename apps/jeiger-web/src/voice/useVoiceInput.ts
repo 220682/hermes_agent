@@ -3,7 +3,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { startLevelMeter } from "./levelMeter";
 import { pickRecorderMime, transcribeBlob } from "./localTranscribe";
 import { type AudioInput, closeStream, listAudioInputs, openMic } from "./micStream";
-import { chooseSttEngine, collectTranscript, getRecognizerCtor, type RecognizerLike, type SttEngine } from "./sttEngine";
+import {
+  chooseSttEngine,
+  collectTranscript,
+  getRecognizerCtor,
+  readSttPreference,
+  type RecognizerLike,
+  speechRecognitionLang,
+  type SttEngine,
+  type SttPreference,
+  writeSttPreference,
+} from "./sttEngine";
 import { classifyMicError, classifySpeechError, type VoiceIssueCode } from "./voiceIssues";
 import { recordLatency } from "./voiceMetrics";
 
@@ -39,6 +49,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
   const recognizerRef = useRef<RecognizerLike | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const webSpeechFailedRef = useRef(false);
+  const [preference, setPreferenceState] = useState<SttPreference>(() => readSttPreference());
   const cbRef = useRef({ onPartialText, onFinalText, onLevel });
 
   cbRef.current = { onPartialText, onFinalText, onLevel };
@@ -66,6 +77,18 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
     } catch {
       // Remembering the choice is a convenience only.
     }
+  }, []);
+
+  const setPreference = useCallback((value: SttPreference) => {
+    setPreferenceState(value);
+    writeSttPreference(value);
+
+    if (value === "auto") {
+      webSpeechFailedRef.current = false;
+    }
+
+    setEngine(null);
+    setIssue(null);
   }, []);
 
   // F3-13: the mic is closed on unmount and when the tab goes away.
@@ -101,7 +124,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
       let failed = false;
       let speechEndedAt: number | null = null;
 
-      rec.lang = "es-ES";
+      rec.lang = speechRecognitionLang(navigator.language);
       rec.interimResults = true;
       rec.continuous = false;
 
@@ -223,11 +246,28 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
 
     const chosen = chooseSttEngine(
       { webSpeech: Ctor !== null, mediaRecorder: typeof MediaRecorder !== "undefined" },
-      webSpeechFailedRef.current,
+      webSpeechFailedRef.current || preference === "local",
     );
 
     if (!chosen || !navigator.mediaDevices?.getUserMedia) {
       setIssue("unsupported");
+
+      return;
+    }
+
+    // Web Speech opens the microphone by itself. A second capture of the same device (the level
+    // meter's) can leave Chrome's recognizer with silence, which reads as `no-speech`, so the
+    // two are never open together: the level meter and the device choice belong to local mode.
+    if (chosen === "web-speech" && Ctor) {
+      setEngine(chosen);
+      setStatus("listening");
+
+      try {
+        startWebSpeech(Ctor);
+      } catch (error) {
+        setIssue(classifyMicError(error));
+        setStatus("idle");
+      }
 
       return;
     }
@@ -252,25 +292,33 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel }: VoiceInpu
     setStatus("listening");
 
     try {
-      if (chosen === "web-speech" && Ctor) {
-        startWebSpeech(Ctor);
-      } else {
-        startLocal(stream);
-      }
+      startLocal(stream);
     } catch (error) {
       releaseMic();
       setIssue(classifyMicError(error));
       setStatus("idle");
     }
-  }, [deviceId, refreshDevices, releaseMic, startLocal, startWebSpeech, status]);
+  }, [deviceId, preference, refreshDevices, releaseMic, startLocal, startWebSpeech, status]);
 
   // Shown before the first click too, so the privacy notice is visible up front (F3-03).
   const plannedEngine =
     engine ??
     chooseSttEngine(
       { webSpeech: getRecognizerCtor(window) !== null, mediaRecorder: typeof MediaRecorder !== "undefined" },
-      webSpeechFailedRef.current,
+      webSpeechFailedRef.current || preference === "local",
     );
 
-  return { status, engine: plannedEngine, issue, devices, deviceId, setDeviceId, toggle, dismissIssue: () => setIssue(null) };
+  return {
+    status,
+    engine: plannedEngine,
+    preference,
+    setPreference,
+    webSpeechAvailable: getRecognizerCtor(window) !== null,
+    issue,
+    devices,
+    deviceId,
+    setDeviceId,
+    toggle,
+    dismissIssue: () => setIssue(null),
+  };
 }

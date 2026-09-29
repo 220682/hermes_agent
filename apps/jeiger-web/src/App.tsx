@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 
 import { AccountSelector } from "@/components/AccountSelector";
 import { Composer } from "@/components/Composer";
@@ -229,12 +229,19 @@ export default function App() {
   const speechRef = useRef(speech);
 
   speechRef.current = speech;
-  routeTurnRef.current = createTurnSpeechRouter({
-    begin: () => speechRef.current.begin(),
-    feed: (delta) => speechRef.current.feed(delta),
-    finish: () => speechRef.current.finish(),
-    stop: () => speechRef.current.stop(),
-  });
+
+  // One router for the life of the app: it remembers whether the turn streamed deltas, and a router
+  // rebuilt on every render forgot that and spoke the whole reply again at the end of the turn.
+  routeTurnRef.current = useMemo(
+    () =>
+      createTurnSpeechRouter({
+        begin: () => speechRef.current.begin(),
+        feed: (delta) => speechRef.current.feed(delta),
+        finish: () => speechRef.current.finish(),
+        stop: () => speechRef.current.stop(),
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (connection !== "open") {
@@ -493,11 +500,14 @@ export default function App() {
         deviceId={voice.deviceId}
         devices={voice.devices}
         engine={voice.engine}
-        issue={voice.issue ?? speechIssue}
+        issues={[...new Set([voice.issue, speechIssue])].filter((code): code is VoiceIssueCode => code !== null)}
         levelRef={levelRef}
         onDeviceChange={voice.setDeviceId}
+        onPreferenceChange={voice.setPreference}
         partial={partial}
+        preference={voice.preference}
         status={voice.status}
+        webSpeechAvailable={voice.webSpeechAvailable}
       />
 
       <Composer

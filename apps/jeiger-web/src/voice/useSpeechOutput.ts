@@ -67,20 +67,28 @@ export function useSpeechOutput({ onSpeakingChange, onIssue }: SpeechOutputOptio
     [],
   );
 
-  const setEnabled = useCallback((value: boolean) => {
-    enabledRef.current = value;
-    setEnabledState(value);
+  const setEnabled = useCallback(
+    (value: boolean) => {
+      enabledRef.current = value;
+      setEnabledState(value);
 
-    if (!value) {
-      playerRef.current?.stop();
-    }
+      if (!value) {
+        playerRef.current?.stop();
+      } else {
+        // The switch is a click: create and resume the audio context here so a browser that
+        // would block audio says so now, not silently at the first reply.
+        void getPlayer();
+        audioRef.current?.unlock().catch(() => cbRef.current.onIssue("autoplay-blocked"));
+      }
 
-    try {
-      window.localStorage.setItem(ENABLED_KEY, value ? "1" : "0");
-    } catch {
-      // A remembered preference is a convenience only.
-    }
-  }, []);
+      try {
+        window.localStorage.setItem(ENABLED_KEY, value ? "1" : "0");
+      } catch {
+        // A remembered preference is a convenience only.
+      }
+    },
+    [getPlayer],
+  );
 
   /** Must run inside a click/keydown: browsers only let audio start after a gesture. */
   const unlock = useCallback(() => {

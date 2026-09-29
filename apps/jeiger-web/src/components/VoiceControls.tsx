@@ -1,16 +1,10 @@
 import type { RefObject } from "react";
 
 import type { AudioInput } from "@/voice/micStream";
-import { PRIVACY_NOTICE, type SttEngine } from "@/voice/sttEngine";
+import { offersLocalSwitch, PRIVACY_NOTICE, STT_PREFERENCE_LABEL, type SttEngine, type SttPreference } from "@/voice/sttEngine";
 import type { VoiceStatus } from "@/voice/useVoiceInput";
 import { type VoiceIssueCode, voiceIssueMessage } from "@/voice/voiceIssues";
-
-const STATUS_LABEL: Record<VoiceStatus, string> = {
-  idle: "Hablar",
-  requesting: "Esperando permiso del micrófono…",
-  listening: "Escuchando: pulsa para terminar",
-  transcribing: "Transcribiendo…",
-};
+import { MIC_LABEL } from "@/voice/voiceLabels";
 
 export interface MicButtonProps {
   status: VoiceStatus;
@@ -23,29 +17,34 @@ export function MicButton({ status, disabled, onToggle }: MicButtonProps) {
 
   return (
     <button
-      aria-label={STATUS_LABEL[status]}
+      aria-label={MIC_LABEL[status]}
       aria-pressed={active}
       disabled={disabled || status === "requesting" || status === "transcribing"}
       onClick={onToggle}
       style={{
         flexShrink: 0,
-        width: 52,
+        minWidth: 52,
         height: 52,
+        padding: "0 16px",
+        gap: 8,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: "50%",
+        color: "var(--jg-red-pale)",
+        fontSize: 14,
+        borderRadius: 26,
         background: active ? "rgba(220,38,38,0.35)" : "rgba(220,38,38,0.08)",
         border: `1px solid ${active ? "var(--jg-red-light)" : "rgba(220,38,38,0.3)"}`,
         opacity: disabled ? 0.5 : 1,
       }}
-      title={STATUS_LABEL[status]}
+      title={MIC_LABEL[status]}
       type="button"
     >
       <svg aria-hidden="true" fill="none" height="20" stroke="var(--jg-red-pale)" strokeWidth="1.8" viewBox="0 0 24 24" width="20">
         <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" />
         <path d="M19 11a7 7 0 0 1-14 0M12 18v3" />
       </svg>
+      <span>{active ? "Escuchando…" : "Dictar"}</span>
     </button>
   );
 }
@@ -53,7 +52,11 @@ export function MicButton({ status, disabled, onToggle }: MicButtonProps) {
 export interface VoiceStripProps {
   status: VoiceStatus;
   engine: SttEngine | null;
-  issue: VoiceIssueCode | null;
+  /** Every notice still standing: dictation and spoken-reply failures must not hide each other. */
+  issues: VoiceIssueCode[];
+  preference: SttPreference;
+  webSpeechAvailable: boolean;
+  onPreferenceChange: (value: SttPreference) => void;
   partial: string;
   devices: AudioInput[];
   deviceId: string;
@@ -62,15 +65,31 @@ export interface VoiceStripProps {
 }
 
 /** Live transcript, level bar, mic selector, privacy notice and error notice (F3-02/03/09/13). */
-export function VoiceStrip({ status, engine, issue, partial, devices, deviceId, levelRef, onDeviceChange }: VoiceStripProps) {
+export function VoiceStrip({
+  status,
+  engine,
+  issues,
+  preference,
+  webSpeechAvailable,
+  onPreferenceChange,
+  partial,
+  devices,
+  deviceId,
+  levelRef,
+  onDeviceChange,
+}: VoiceStripProps) {
   const busy = status !== "idle";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {issue && (
+      {issues.map((issue) => (
         <div
+          key={issue}
           role="alert"
           style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
             padding: "8px 14px",
             background: "rgba(251,146,60,0.08)",
             border: "1px solid var(--jg-warn)",
@@ -79,9 +98,34 @@ export function VoiceStrip({ status, engine, issue, partial, devices, deviceId, 
             fontSize: 14,
           }}
         >
-          {voiceIssueMessage(issue)}
+          <span style={{ flexGrow: 1 }}>{voiceIssueMessage(issue)}</span>
+          {offersLocalSwitch(issue, engine) && (
+            <button
+              onClick={() => onPreferenceChange("local")}
+              style={{ flexShrink: 0, padding: "6px 10px", color: "var(--jg-text)", border: "1px solid var(--jg-warn)", borderRadius: 6, background: "transparent" }}
+              type="button"
+            >
+              Cambiar a reconocimiento local
+            </button>
+          )}
         </div>
-      )}
+      ))}
+
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--jg-text-secondary)" }}>
+        <span>Reconocimiento</span>
+        <select
+          aria-label="Reconocimiento"
+          disabled={busy}
+          onChange={(e) => onPreferenceChange(e.target.value === "local" ? "local" : "auto")}
+          style={{ background: "var(--jg-surface)", color: "var(--jg-text)", border: "1px solid rgba(220,38,38,0.4)", borderRadius: 6, padding: "4px 6px" }}
+          value={preference}
+        >
+          <option disabled={!webSpeechAvailable} value="auto">
+            {STT_PREFERENCE_LABEL.auto}
+          </option>
+          <option value="local">{STT_PREFERENCE_LABEL.local}</option>
+        </select>
+      </label>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: "var(--jg-text-secondary)" }}>
         <div
@@ -95,7 +139,7 @@ export function VoiceStrip({ status, engine, issue, partial, devices, deviceId, 
         </div>
 
         <span aria-live="polite" role="status" style={{ flexGrow: 1, minWidth: 0, color: partial ? "var(--jg-text)" : undefined }}>
-          {status === "listening" ? partial || "Te escucho…" : status === "idle" ? "" : STATUS_LABEL[status]}
+          {status === "listening" ? partial || "Te escucho…" : status === "idle" ? "" : MIC_LABEL[status]}
         </span>
 
         {devices.length > 0 && (
