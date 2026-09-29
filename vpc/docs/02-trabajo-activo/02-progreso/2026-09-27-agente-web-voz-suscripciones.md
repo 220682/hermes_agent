@@ -133,3 +133,13 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - Falta (tanda B/C): chat real, selector con estado real, interrupción, errores, accesibilidad completa, responsive, arranque documentado.
 - Hallazgos: estado `error` del orbe no está en design.md; `jeiger_frontend.log` versionado; el token va en `?token=` de la URL del WS (visible en logs de consola).
 - Capturas en `03-evidencia/capturas/f2a-*.jpg` (sin commitear).
+
+### Handoff F2 tanda B (2026-09-29, Worker local-worker-2)
+- Conforme: F2-01, F2-06, F2-08, F2-12. Observado: F2-07 (sin RESPONDIENDO), F2-13 (sin prueba en turno real).
+- Código en `local-worker-2` (commit "F2 tanda B"): Esc global, aviso al cambiar de cuenta, texto "falta iniciar sesión", ayuda inicial, delta tardío ignorado, conexión WS diferida (evita el token en consola).
+- Hallazgo principal: `claude-cli` no emite `message.delta` (solo `thinking.delta` + `message.complete` entero, 10 a 30 s de latencia). Investigar `plugins/model-providers/claude-cli/protocol.py` y el paso de `text_delta` al stream de `tui_gateway/prompt_turn.py` antes de dar F2-07 por Conforme.
+- Cursor ya tiene sesión en la terminal nueva (sin crédito). "falta iniciar sesión" solo se vio con estado simulado.
+- Cupo de Claude usado: 3/3. Para F2-13 real queda 1 turno: enviar y pulsar Esc en PENSANDO.
+- Retomar: `$env:HERMES_DASHBOARD_SESSION_TOKEN` desde `.env.local` (por script), `hermes_cli.main serve --port 9119 --skip-build` (tarda ~25 s en abrir) y `npm run dev`.
+- Sondas WS: scratchpad `ws_probe.py` (no commiteada).
+- Tanda C sin empezar.
