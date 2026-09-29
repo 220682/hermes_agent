@@ -2,7 +2,7 @@
 
 ## Referencia al plan
 
-`../01-planes/2026-09-27-agente-web-voz-suscripciones.md` (Punch List embebida). Esta versión recoge la fase F1 completa (Worker fase 1, rama `local-worker-1`). F2 y F3 aún no empiezan.
+`../01-planes/2026-09-27-agente-web-voz-suscripciones.md` (Punch List embebida). Esta versión recoge la evidencia de F1 (Worker fase 1, rama `local-worker-1`, secciones de este archivo) y de F2 y F3 (tandas en `local-worker-2` y `local-worker-3`, secciones añadidas al final). Estado tras la Auditoría del 2026-09-29: 35 ítems `Conforme` y 15 `Observado` de 50; pendiente de Gate 2. Las secciones de F1 sobre Cursor se corrigieron el 2026-09-29: la prueba se hizo con crédito gratuito, sin suscripción activa.
 
 ## Entorno y fecha
 
@@ -13,7 +13,7 @@
 
 ## Rol / usuario y datos autorizados
 
-Responsable humano: cuenta propia de Claude Pro y cuenta propia de Cursor (plan "Cursor Free" según `agent about`, con saldo/crédito propio). Ninguna credencial se leyó ni se imprimió: ni `~/.claude/.credentials.json` ni el almacén de Cursor se abrieron; los estados salen de `claude auth status` / `agent status` / `agent about` con los campos de identidad (correo, nombre, id de usuario, organización) redactados o excluidos en el código. El login de Cursor lo hizo el propio Responsable humano en su navegador; este Worker nunca lo tocó.
+Responsable humano: cuenta propia de Claude Pro y cuenta propia de Cursor (plan "Cursor Free" según `agent about`, con crédito gratuito de prueba; sin suscripción Cursor activa). Ninguna credencial se leyó ni se imprimió: ni `~/.claude/.credentials.json` ni el almacén de Cursor se abrieron; los estados salen de `claude auth status` / `agent status` / `agent about` con los campos de identidad (correo, nombre, id de usuario, organización) redactados o excluidos en el código. El login de Cursor lo hizo el propio Responsable humano en su navegador; este Worker nunca lo tocó.
 
 ## Punch List ejecutada
 
@@ -25,8 +25,8 @@ Responsable humano: cuenta propia de Claude Pro y cuenta propia de Cursor (plan 
 | F1-04 | Cerebro puro: `claude` sin herramientas, la herramienta la ejecuta Hermes | Ronda con herramienta simulada; corrida real por Hermes (`hermes chat -t file`) leyendo un archivo con un dato inventado | Corrida real OK: respondió el dato del archivo (`NARANJA-482`), que Claude no podía conocer por sí mismo; sesión exportada confirma `tool_calls=read_file` resuelto por Hermes | Conforme | Sección F1-04 | Worker F1 |
 | F1-05 | Un proceso `claude` por sesión, sin huérfanos | Un turno real; PID del hijo del cliente comprobado con `psutil` antes/después de `close()` | Un único proceso `claude.exe` por el PID exacto del cliente; sin hijos vivos tras `close()` | Conforme | Sección F1-05 | Worker F1 |
 | F1-06 | `hermes auth status claude-cli` dice logged in con el plan, sin correo; y "logged out" con directorio de configuración vacío | Comando real en ambos casos; sesión real intacta después | Ambos casos correctos | Conforme | Sección F1-06 | Worker F1 |
-| F1-07 | Spike del CLI de Cursor (autorizado): instalación, versión, login del Responsable humano, `agent status`, una llamada real | Script oficial revisado y ejecutado; login hecho por el Responsable humano en su navegador (no por este Worker) | CLI instalado y funcional; sesión logueada (plan "Cursor Free" según `agent about`); llamada real respondió correctamente. El Responsable humano confirmó que probarlo consumió saldo/crédito de su cuenta (ver Riesgos del plan, punto 2, y "Límites de uso") | Conforme | Sección F1-07 | Worker F1 / Responsable humano (login) |
-| F1-08 | Plugin `cursor`: `hermes chat --provider cursor -q "<mensaje>"` responde | Llamada real vía `hermes chat --provider cursor -m auto` | Respondió correctamente en la primera llamada real; la segunda cortó por saldo agotado (HTTP 429, ver "Límites de uso") | Conforme | Sección F1-07 | Worker F1 |
+| F1-07 | Spike del CLI de Cursor (autorizado): instalación, versión, login del Responsable humano, `agent status`, una llamada real | Script oficial revisado y ejecutado; login hecho por el Responsable humano en su navegador (no por este Worker) | CLI instalado y funcional; sesión logueada (plan "Cursor Free" según `agent about`); llamada real respondió correctamente. La prueba se hizo con crédito gratuito de prueba, sin suscripción activa (ver Riesgos del plan, punto 2, y "Límites de uso") | Conforme | Sección F1-07 | Worker F1 / Responsable humano (login) |
+| F1-08 | Plugin `cursor`: `hermes chat --provider cursor -q "<mensaje>"` responde | Llamada real vía `hermes chat --provider cursor -m auto` | Respondió correctamente en la primera llamada real; la segunda cortó por crédito gratuito agotado (HTTP 429, ver "Límites de uso") | Conforme | Sección F1-07 | Worker F1 |
 | F1-09 | `hermes auth status cursor` usa `agent status`/`agent about`; sin sesión indica `agent login` | Comando real, sesión logueada; caso sin sesión con `psutil` fuera del PATH | `cursor: logged in (Cursor Free)` con sesión real; sin el CLI en el PATH da el mensaje de instalación con la instrucción | Conforme | Sección F1-07 | Worker F1 |
 | F1-10 | `hermes chat` sin `--provider` usa `claude-cli` (config por defecto) | `hermes config set model.provider claude-cli` / `model.default claude-sonnet-5`, luego `hermes chat` sin flags | Respondió "listo"; la sesión exportada confirma `provider=claude-cli`, `model=claude-sonnet-5` | Conforme | Sección F1-10 | Worker F1 |
 | F1-11 | Errores del proveedor legibles: CLI ausente o sin login dan un mensaje con la instrucción, no una traza | `PATH` sin `claude`; `CLAUDE_CONFIG_DIR` vacío y una llamada real | Ambos casos dan `BrainError` con la instrucción de instalar o de `claude auth login`, código 401 en el caso sin login | Conforme | Sección F1-06 y F1-11 | Worker F1 |
@@ -35,7 +35,7 @@ Responsable humano: cuenta propia de Claude Pro y cuenta propia de Cursor (plan 
 | R-01 | `hermes doctor` sin errores nuevos; `anthropic` sigue respondiendo | `hermes doctor` en el worktree (repetido tras corregir un import circular propio, ver "Limitaciones"); llamada real a `--provider anthropic` | El proveedor `anthropic` respondió igual que antes; `hermes doctor` no menciona `claude-cli` ni `cursor` como error | Conforme | Sección "Regresiones verificadas" | Worker F1 |
 | R-03 | Tests nuevos en verde; existentes afectados sin fallos | `scripts/run_tests.sh` con el Python del entorno de test | 19 tests nuevos (motor + ambos plugins) en verde; 172 tests existentes de proveedores/ACP en verde, 0 fallos | Conforme | Sección "Resultados de pruebas técnicas" | Worker F1 |
 | T-01 | Sin secretos en el diff, los registros ni la evidencia; los plugins no leen los archivos de credenciales | Búsqueda de patrones sobre `git diff main...HEAD` y sobre `~/AppData/Local/hermes/logs`; revisión manual del código nuevo | Sin coincidencias en ningún caso; el código nuevo no abre ningún archivo de credenciales | Conforme | Este documento | Worker F1 |
-| T-02 | Límites de uso por proveedor documentados con fuente | `rate_limit_event` de Claude; confirmación directa del Responsable humano sobre Cursor | Ver "Límites de uso" | Conforme | Sección "Límites de uso" | Worker F1 |
+| T-02 | Límites de uso por proveedor documentados con fuente | `rate_limit_event` de Claude; confirmación directa del Responsable humano sobre Cursor | Ver "Límites de uso" | Conforme, con la salvedad de Cursor (solo crédito gratuito; no verificado con plan pagado) | Sección "Límites de uso" | Worker F1 |
 
 ## Resultados F1-01
 
@@ -149,7 +149,7 @@ hermes chat --provider cursor -m auto -t todo --ignore-rules --ignore-user-confi
 session_id: 20260928_132119_897690
 ```
 
-Una segunda llamada real, minutos después, cortó con `HTTP 429: cursor CLI exited early: ActionRequiredError: You've hit your usage limit`. El Responsable humano confirmó directamente que probar el CLI le consumió saldo o crédito de su cuenta de Cursor (sin dar una cifra exacta). Ver "Límites de uso".
+Una segunda llamada real, minutos después, cortó con `HTTP 429: cursor CLI exited early: ActionRequiredError: You've hit your usage limit`. El Responsable humano aclaró que usó el crédito gratuito de prueba de su cuenta de Cursor y que no tiene suscripción activa todavía (corrección del 2026-09-28). Ver "Límites de uso".
 
 **Estado de sesión:** `hermes auth status cursor` → `cursor: logged in (Cursor Free)`, leído de `agent status` (login) y `agent about --format json` (plan, campo `subscriptionTier`); sin sesión, apunta a `cursor-agent login`.
 
@@ -175,9 +175,9 @@ session_id: 20260928_132604_5c420e
 | Proveedor | Tipo de límite | Fuente |
 |---|---|---|
 | Claude (`claude-cli`) | Cupo propio de la suscripción, por ventanas de tiempo (`five_hour`, `seven_day`), sin cargo aparte mientras no se pida "extra usage" | `rate_limit_event.rate_limit_info` de una llamada real (ver F1-01); en esta sesión se llegó a una utilización de 0,85 en la ventana de 5 horas y luego al límite de sesión |
-| Cursor (`cursor`) | **Consume saldo o crédito de la cuenta**, no un cupo aparte de la suscripción; no verificado si depende del plan (Pro/Pro+) | Confirmación directa del Responsable humano el 2026-09-28 ("si tenia algo de saldo para probarlo"), sin cifra exacta dada; consistente con el `HTTP 429 ActionRequiredError: You've hit your usage limit` obtenido en la segunda llamada real de este Worker |
+| Cursor (`cursor`) | **No verificado con un plan pagado.** Solo se probó con el crédito gratuito de prueba (plan "Cursor Free"), sin suscripción Pro/Pro+ activa; no se sabe si con suscripción el uso se cubre como en Claude o consume saldo aparte | Declaración del Responsable humano el 2026-09-28 (probó con crédito gratuito y sin suscripción; ver Riesgos punto 2 del plan); el `HTTP 429 ActionRequiredError: You've hit your usage limit` de la segunda llamada real es coherente con crédito de prueba agotado, no prueba nada sobre un plan pagado |
 
-Este es el hallazgo más relevante para el Gate 2: **Claude y Cursor no se cobran igual.** El diseño sigue sin distinguir Pro de Max ni Pro de Pro+ en el código (tier-agnóstico), pero la documentación y, más adelante, la interfaz (F2) no deben presentar a Cursor como "gratis por tu suscripción" de la misma forma que Claude.
+**Salvedad para el Gate 2 (T-02):** no se puede afirmar que Claude y Cursor se cobren distinto. El diseño no distingue Pro de Max ni Pro de Pro+ en el código (tier-agnóstico); la documentación y la interfaz (F2) no deben presentar a Cursor como "gratis por tu suscripción" hasta repetir la llamada real con la suscripción Pro/Pro+ activa (pendiente, no bloqueante).
 
 ## Enlace al artifact de checklist visual
 
@@ -199,8 +199,8 @@ No aplica a F1.
 ## Limitaciones o casos no verificables
 
 - Una primera corrida de `hermes doctor` (antes de corregir el import circular de `agent/cli_brain.py` con `providers/__init__.py`, ver Mejoras del plan) mostró `model.provider 'claude-cli' is not a recognised provider`. Al repetirla ya con el import corregido, `hermes doctor` reconoce ambos proveedores sin error: `hermes_cli.doctor_config._known_provider_ids()` sí incluye `claude-cli` y `cursor` (verificado llamándola directamente, 87 proveedores conocidos con ambos presentes). El aviso inicial era un efecto de mi propio bug de import, ya corregido, no una fuente de verdad duplicada en el núcleo — corrijo aquí lo que había anotado antes sin volver a verificar.
-- El plan de Cursor del Responsable humano aparece como "Free" en `agent about`; no se sabe si eso cambiaría con Pro/Pro+ ni si el consumo de saldo es exclusivo del plan Free.
-- No se midió cuánto saldo exacto consumieron las llamadas reales de Cursor de esta sesión.
+- El plan de Cursor del Responsable humano aparece como "Free" en `agent about`; no se sabe cómo se comportaría el uso con Pro/Pro+.
+- No se midió cuánto crédito gratuito consumieron las llamadas reales de Cursor de esta sesión.
 - La causa exacta de los ~9 s que había medido el Planner en F1-01 (antes de los flags de aislamiento) no se aisló.
 
 ## F2 tanda A — base visual de JEIGER (Worker local-worker-2, 2026-09-29)

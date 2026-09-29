@@ -6,15 +6,15 @@
 
 ## Estado general y fase actual
 
-**F1 (Cerebro) terminada** (49 de 50 ítems de la Punch List, todos los de esta fase en `Conforme`). Pendiente de Auditoría y Gate 2 antes de mergear `local-worker-1` a `main`. **F2 (Web) en curso** (el Orquestador autorizó seguir directo con F2 sin auditoría intermedia; el plan reserva una sola auditoría final para F1+F2+F3). F3 sin empezar.
+**F1, F2 y F3 implementadas** (`local-worker-1..3`, apiladas, sin merge). Auditoría del 2026-09-29: 35 ítems `Conforme` y 15 `Observado` de 50, recomendación `Requiere corrección` (documental), aplicada el mismo día. Estado: **pendiente de Gate 2** y de la decisión del Responsable humano sobre los 15 `Observado`, el push de las ramas y la prueba de voz real (F3-13).
 
 ## Tabla de roles / Workers y estado
 
 | Rol | Rama | Estado |
 |---|---|---|
-| Worker fase 1 | `local-worker-1` (`.worktrees/local-worker-1`) | Terminada, pendiente de Auditoría |
-| Worker fase 2 (tandas A, B, C) | `local-worker-2` (`.worktrees/local-worker-2`, desde `local-worker-1`) | Parcial; tanda A por lanzar |
-| Worker fase 3 | `local-worker-3` (se crea al empezar F3, desde `local-worker-2`) | Sin asignar |
+| Worker fase 1 | `local-worker-1` (`.worktrees/local-worker-1`) | Terminada; auditada; pendiente de Gate 2 |
+| Worker fase 2 (tandas A, B, C) | `local-worker-2` (desde `local-worker-1`; ya sin worktree, rama conservada) | Terminada; 3 ítems `Observado`; auditada; pendiente de Gate 2 |
+| Worker fase 3 (tandas A, B) | `local-worker-3` (`.worktrees/local-worker-3`, desde `local-worker-2`) | Terminada; 11 ítems `Observado`; auditada; pendiente de Gate 2 |
 
 ## Avances terminados
 
@@ -50,15 +50,15 @@ Ninguno: F1 está terminada. A la espera de que el Orquestador asigne Auditor y 
 - Haiku ignora el formato `<tool_call>` del contrato original; se reforzó y el parser acepta `<function_calls>`.
 - Cursor: los eventos `assistant` mezclan narración y respuesta final sin forma distinguible; la respuesta se toma de `result.result`.
 - Cursor es un `.cmd` de Windows: el turno nunca va en `argv` (cmd.exe reinterpreta metacaracteres); va en un archivo del workspace aislado.
-- ~~Cursor consume saldo/crédito, no cupo de suscripción~~ — **corregido el 2026-09-28 por el Responsable humano**: la prueba se hizo con crédito gratuito de prueba y sin suscripción activa; no prueba nada sobre un plan pagado. Vigente: Riesgos punto 2 del plan. Pendiente repetir con Pro/Pro+ activo.
+- Cursor: la prueba real se hizo con crédito gratuito de prueba y sin suscripción activa (corregido el 2026-09-28 por el Responsable humano); no prueba nada sobre un plan pagado. Vigente: Riesgos punto 2 del plan. Pendiente repetir con Pro/Pro+ activo.
 - Import circular propio entre `agent/cli_brain.py` y `providers/__init__.py`; corregido. Un aviso de `hermes doctor` que parecía un bug del núcleo era efecto de ese import circular, no del núcleo (se corrigió la anotación en la evidencia tras repetir la prueba).
-- Preguntas de negocio al Responsable humano: ninguna. Sí hubo dos avisos del coordinador durante la fase (corte por límite de sesión de Claude, y confirmación del consumo de saldo de Cursor), ambos atendidos y documentados donde corresponde.
+- Preguntas de negocio al Responsable humano: ninguna. Sí hubo dos avisos del coordinador durante la fase (corte por límite de sesión de Claude, y confirmación del consumo de saldo de Cursor), ambos atendidos y documentados donde corresponde (el aviso de Cursor era sobre crédito gratuito, no sobre un cargo de suscripción).
 
 ## Bloqueos, riesgos y decisiones requeridas
 
 - **Gate 2 de F1:** pendiente de Auditoría y de la decisión del Responsable humano.
-- **Cupos consumidos:** el cupo de la ventana de 5 horas de Claude Pro quedó alto (0,85 de utilización) y llegó a su límite una vez; el saldo de Cursor también se redujo. Cualquier prueba real adicional en F2/F3 debe ser mínima.
-- **Decisión pendiente para el Gate 2 (no bloquea F1, sí afecta cómo se documenta F2):** presentar con claridad que Cursor cobra por saldo/crédito y Claude por cupo de suscripción, no como equivalentes.
+- **Cupos consumidos:** el cupo de la ventana de 5 horas de Claude Pro quedó alto (0,85 de utilización) y llegó a su límite una vez; el crédito gratuito de Cursor también se agotó. Cualquier prueba real adicional en F2/F3 debe ser mínima.
+- **Salvedad para el Gate 2 (no bloquea):** no presentar a Cursor como "gratis por tu suscripción" hasta repetir la llamada real con suscripción activa; tampoco afirmar que se cobre distinto que Claude (no verificado).
 
 ## Próximo paso verificable
 
@@ -80,7 +80,7 @@ Pendiente de limpieza (no bloqueante, en la tanda C): logs y `package-lock.json`
 
 ### 2026-09-28 — Worker fase 1 → Orquestador
 
-F1 completa, 49/50 ítems de la Punch List en `Conforme` (los 1 restantes son de F2/F3, no de esta fase). Cuatro commits en `local-worker-1`, sin push. Hallazgo de negocio importante para el Gate 2: Cursor cobra por saldo, Claude por cupo de suscripción — no presentarlos como equivalentes en trabajo futuro. Queda a la espera de Auditoría o de autorización para pasar a F2.
+F1 completa, 49/50 ítems de la Punch List en `Conforme` (los 1 restantes son de F2/F3, no de esta fase). Cuatro commits en `local-worker-1`, sin push. Salvedad sobre Cursor (corregida el 2026-09-28 por el Responsable humano): se probó con crédito gratuito, sin suscripción activa; no se sabe cómo se cobra con plan pagado (T-02). Queda a la espera de Auditoría o de autorización para pasar a F2.
 
 ## Avance F2 (Worker fase 2, en curso)
 
