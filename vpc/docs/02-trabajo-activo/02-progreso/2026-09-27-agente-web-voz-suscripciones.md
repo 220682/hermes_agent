@@ -169,3 +169,13 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - No hubo navegador con micrófono (Playwright MCP caído; no usé el Chrome del Responsable humano). Falta: dictado real, permiso, capturas de errores, F3-13 (procedimiento paso a paso en la evidencia).
 - Retomar: `cd .worktrees/local-worker-3/apps/jeiger-web; npm run check; npm run dev`, y serve con `hermes_cli.main serve --port 9119 --skip-build`.
 - Hallazgos: con `HERMES_CLIENT_STREAMS`/serve todo arranca en ~40 s; la selección de micrófono no aplica a Web Speech (Chrome usa el predeterminado); el panel Sistema aún dice "Por definir en F3" para STT/TTS; tanda B debe añadir Espacio para hablar.
+
+
+### Handoff F3 tanda B (2026-09-29, Worker local-worker-3)
+- Conforme: F3-10, F3-11. Observado: F3-05, F3-06, F3-07, F3-08, F3-12, R-04, y siguen F2-07 y F2-13. Sin navegador conectado, sin paquetes de voz ni ffmpeg. Llamadas reales a Claude/Cursor: 0.
+- Código en `local-worker-3` (commit "F3 tanda B"): cola TTS por frases (`POST /api/audio/speak`), orbe con `AnalyserNode`, Espacio/Esc/botón, botón de voz en cabecera, panel Sistema con STT/TTS y latencias, test Python de borrado de temporales. `npm run check` verde (62 tests).
+- Contrato real sondeado: `voice-config` = relay/edge; `speak` = 400 en 128 ms "No TTS provider available".
+- Para cerrar lo Observado: `hermes pm install --extra edge-tts` (autorización), serve + `npm run dev`, y sesión de tres turnos con navegador (procedimientos en la evidencia).
+- VAD no implementado (riesgo de eco); decidir si se abre como ítem aparte.
+- Hallazgos: el autodetector de STT del servidor podría usar claves de pago si aparecen; el clasificador de permisos bloqueó cargar el token de `.env.local` por script (usé un backend con token desechable en el puerto 9120, ya detenido); `speak-stream` con Edge necesita ffmpeg.
+- No se tocaron `web/`, `apps/desktop/` ni `tui_gateway/`. Sin push ni merge.

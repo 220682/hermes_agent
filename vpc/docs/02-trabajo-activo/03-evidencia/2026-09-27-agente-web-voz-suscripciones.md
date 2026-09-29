@@ -313,3 +313,36 @@ Código: `apps/jeiger-web/src/voice/*` (voiceIssues, micStream, levelMeter, sttE
 5. Pulsa de nuevo el micrófono: el icono de grabación de la pestaña desaparece. Repite y cierra la pestaña estando a la escucha: el icono de micrófono de Chrome/Windows debe desaparecer.
 6. Cambia el selector a otro micrófono (si hay) y repite.
 7. Anota qué sonaba y el resultado de cada punto.
+
+
+## F3 tanda B (2026-09-29, Worker local-worker-3): salida de voz, orbe reactivo, interrupción, modo conversación
+
+Entorno: sin `edge-tts`, `piper-tts`, `faster-whisper` ni `ffmpeg` (no se instalaron). Sin navegador conectado (`list_connected_browsers` devolvió `[]`, Playwright MCP caído). Llamadas reales a Claude/Cursor: 0. El intento de arrancar `serve` con el token de `.env.local` fue denegado por el clasificador de permisos, así que las sondas usaron un backend con token desechable en el puerto 9120 (ya detenido); ningún token real se leyó ni imprimió.
+
+**Sonda real del contrato `/api/audio/*`** (backend local, token desechable):
+- `GET /api/audio/voice-config` -> `{"ok":true,"stt":{"mode":"relay","reason":"command/plugin provider"},"tts":{"mode":"relay","reason":"provider 'edge' has no client wire"}}`.
+- `POST /api/audio/speak {"text":"Hola, esto es una prueba."}` -> HTTP 400 en 128 ms: `TTS chunk 1 failed (edge): No TTS provider available. Enable Edge TTS with: hermes pm install --extra edge-tts ...`. Tras la sonda, 0 archivos `.mp3` en `%TEMP%`.
+
+**Decisión de diseño:** el cliente usa `POST /api/audio/speak` por frase (el servidor entrega un data URL mp3/wav que el navegador decodifica) y no `WS /api/audio/speak-stream`, porque ese socket exige convertir a PCM con `ffmpeg` (ausente) para Edge. El corte de frases replica `SentenceChunker` del servidor. Código: `apps/jeiger-web/src/voice/{sentenceChunker,speakApi,ttsPlayer,browserAudio,orbAudio,spaceKey,turnSpeech,useSpeechOutput,voiceMetrics}.ts`, `App.tsx`, `Orb.tsx`, `SystemPanel.tsx`, `HeaderButtons.tsx`, `VoiceControls.tsx`.
+
+**F3-05 (Observado):** vitest verifica la cola: primera frase sintetizada antes de que llegue el resto, el audio empieza con el texto aún llegando (`textEndAt` nulo), orden de reproducción, precarga máx. 2, error de proveedor -> `onError` y la respuesta sigue como texto. Falta oír audio real. Procedimiento: `hermes pm install --extra edge-tts` (y `ffmpeg` solo si se quiere `speak-stream`), arrancar serve + `npm run dev`, activar el botón de voz de la cabecera, enviar una pregunta larga y comprobar que se oye la primera frase antes de terminar el texto; el panel Sistema muestra "TTS primer audio".
+
+**F3-06 (Observado):** `orbAudio.ts` mueve las 9 barras (`scaleY`) y los anillos (`opacity`) con `AnalyserNode` + `requestAnimationFrame` escribiendo en el DOM (`data-live` desactiva la animación CSS simulada); el micrófono usa el mismo driver por nivel. Sin `prefers-reduced-motion`. Tests: barras más altas con más volumen, sigue al analizador cuadro a cuadro, vuelve a CSS al terminar, gana el TTS sobre el micro. Revisión de código: no hay `setState` en el bucle. Falta vídeo con audio real.
+
+**F3-07 (Observado):** botón, Esc y Espacio llegan a `handleInterrupt`: cortan el audio (síncrono, `stop()` devolvió 0 ms con reloj simulado), aborta las peticiones pendientes y llama a `session.interrupt` solo si el turno está activo; un delta tardío tras interrumpir no vuelve a hablar. Latencia real de corte se muestra en el panel ("Corte al interrumpir"). VAD: no se implementa; con el altavoz sonando y el micrófono abierto sin verificar la cancelación de eco real hay riesgo de que JEIGER se interrumpa con su propia voz. Decisión: queda Observado hasta poder probar con audio real; la interrupción por voz sería un ítem aparte.
+
+**F3-08 (Observado):** Espacio = hablar cuando está en reposo, cortar cuando piensa o habla; el orbe pasa a "respondiendo" mientras suena el audio aunque el turno ya haya terminado. Falta ver tres turnos seguidos. Procedimiento manual: serve + `npm run dev`, activar voz, Espacio, hablar una frase, esperar la respuesta hablada y repetir tres veces; una interrupción con Esc a mitad; una captura por estado.
+
+**F3-10 (Conforme):** proveedor TTS efectivo `edge` (por defecto, gratuito); STT: `stt.provider` sin definir y resolución local `none` (sin claves de nube); en la config no aparece `voice_live` (existe la sección por defecto `voice.gpt_live`, que JEIGER no usa: ninguna ruta `/api/audio/voice-live/*` ni ElevenLabs se invoca). El panel Sistema avisa si `voice-config` indica ElevenLabs u OpenAI. **Riesgo anotado:** el autodetector de STT del servidor prueba local > groq > openai > mistral > xai > elevenlabs > deepinfra; si el Responsable humano añade una clave de pago, `/transcribe` podría usarla sin avisar.
+
+**F3-11 (Conforme):** `tests/hermes_cli/test_audio_speak_temp_files.py` (2 tests, verdes con `scripts/run_tests.sh`): `/api/audio/speak` borra el archivo tras leerlo y `_sync_sentence_to_pcm` (speak-stream) borra todo lo que crea. El cliente solo guarda buffers en memoria.
+
+**F3-12 (Observado):** sin proveedores no hay medidas reales. Medido: TTS sin proveedor -> 400 en 128 ms. Instrumentado: STT (fin de habla o parada del grabador -> texto), TTS (primera frase cortada -> primer audio) y corte; se ven en el panel Sistema. Procedimiento: tras instalar, hacer 5 turnos y anotar las cifras del panel.
+
+**R-04 (Observado):** con la voz desactivada nadie llama a `TtsPlayer` (el router de turnos no hace nada) y `handleSubmit` conserva su flujo; sin navegador no se probó el chat con voz activada.
+
+**Pendientes heredados F2-07 y F2-13:** siguen Observado (sin navegador ni llamadas reales). Procedimiento: serve + `npm run dev`; enviar "cuenta hasta veinte despacio" y capturar PENSANDO y RESPONDIENDO (Sistema y píldora); repetir y pulsar Esc en RESPONDIENDO, confirmar que el orbe vuelve a EN REPOSO.
+
+**Verificación:** `npm run check` verde (typecheck, 62 tests vitest, eslint).
+
+**Hallazgos:** (1) el token no entra en el código nuevo (los `fetch` usan cabecera). (2) `speak-stream` con Edge exige `ffmpeg`. (3) el clasificador de permisos bloquea cargar el token de `.env.local` por script; para probar en navegador hay que arrancar serve y Vite a mano o con un token desechable (`VITE_HERMES_TOKEN` en el entorno de Vite tiene prioridad sobre `.env.local`).
