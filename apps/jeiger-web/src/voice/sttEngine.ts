@@ -18,7 +18,7 @@ export function chooseSttEngine(caps: SttCapabilities, skipWebSpeech: boolean): 
 }
 
 export const PRIVACY_NOTICE: Record<SttEngine, string> = {
-  "web-speech": "Reconocimiento de Chrome/Edge: tu audio se envía a los servidores de Google para transcribirlo.",
+  "web-speech": "Reconocimiento del navegador: el audio se envía al servicio de voz de tu navegador (Google en Chrome, Microsoft en Edge).",
   local: "Reconocimiento local: el audio se transcribe en este equipo (faster-whisper) y no sale de él.",
 };
 
@@ -80,18 +80,44 @@ export function offersLocalSwitch(issue: string | null, engine: SttEngine | null
 export type SttPreference = "auto" | "local";
 
 export const STT_PREFERENCE_LABEL: Record<SttPreference, string> = {
-  auto: "Chrome (Google)",
+  auto: "Navegador (Web Speech)",
   local: "Local (Whisper en tu equipo)",
 };
 
+/** Edge ("Edg/" in the UA) sends Web Speech audio to Microsoft and failed with `no-speech` in practice. */
+export function isEdgeUserAgent(userAgent: string | undefined): boolean {
+  return /Edg\//.test(userAgent ?? "");
+}
+
+/** Local Whisper by default in Edge; the browser's own recognizer elsewhere. */
+export function defaultSttPreference(userAgent: string | undefined): SttPreference {
+  return isEdgeUserAgent(userAgent) ? "local" : "auto";
+}
+
+/** The microphone picker only feeds the local recorder; Web Speech always uses the OS default mic. */
+export function showsMicSelector(preference: SttPreference, engine: SttEngine | null): boolean {
+  return preference === "local" || engine === "local";
+}
+
 const STT_PREFERENCE_KEY = "jeiger.sttPreference";
 
-export function readSttPreference(storage?: Pick<Storage, "getItem">): SttPreference {
+function currentUserAgent(): string | undefined {
+  return typeof navigator === "undefined" ? undefined : navigator.userAgent;
+}
+
+/** A saved choice always wins; otherwise the browser's default. */
+export function readSttPreference(storage?: Pick<Storage, "getItem">, userAgent: string | undefined = currentUserAgent()): SttPreference {
   try {
-    return (storage ?? window.localStorage).getItem(STT_PREFERENCE_KEY) === "local" ? "local" : "auto";
+    const saved = (storage ?? window.localStorage).getItem(STT_PREFERENCE_KEY);
+
+    if (saved === "local" || saved === "auto") {
+      return saved;
+    }
   } catch {
-    return "auto";
+    // Fall through to the default.
   }
+
+  return defaultSttPreference(userAgent);
 }
 
 export function writeSttPreference(value: SttPreference, storage?: Pick<Storage, "setItem">): void {

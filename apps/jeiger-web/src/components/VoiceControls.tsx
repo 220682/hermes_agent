@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 
 import type { AudioInput } from "@/voice/micStream";
-import { offersLocalSwitch, PRIVACY_NOTICE, STT_PREFERENCE_LABEL, type SttEngine, type SttPreference } from "@/voice/sttEngine";
+import { offersLocalSwitch, PRIVACY_NOTICE, showsMicSelector, STT_PREFERENCE_LABEL, type SttEngine, type SttPreference } from "@/voice/sttEngine";
 import type { VoiceStatus } from "@/voice/useVoiceInput";
 import { type VoiceIssueCode, voiceIssueMessage } from "@/voice/voiceIssues";
 import { MIC_LABEL } from "@/voice/voiceLabels";
@@ -127,6 +127,12 @@ export function VoiceStrip({
         </select>
       </label>
 
+      {!showsMicSelector(preference, engine) && (
+        <div style={{ fontSize: 12, color: "var(--jg-text-secondary)" }}>
+          El reconocimiento del navegador usa el micrófono predeterminado de Windows; el selector de micrófono solo aparece en modo local.
+        </div>
+      )}
+
       <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: "var(--jg-text-secondary)" }}>
         <div
           aria-hidden="true"
@@ -142,12 +148,12 @@ export function VoiceStrip({
           {status === "listening" ? partial || "Te escucho…" : status === "idle" ? "" : MIC_LABEL[status]}
         </span>
 
-        {devices.length > 0 && (
+        {devices.length > 0 && showsMicSelector(preference, engine) && (
           <label style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
             <span>Micrófono</span>
             <select
               aria-label="Micrófono"
-              disabled={busy || engine === "web-speech"}
+              disabled={busy}
               onChange={(e) => onDeviceChange(e.target.value)}
               style={{ maxWidth: 220, background: "var(--jg-surface)", color: "var(--jg-text)", border: "1px solid rgba(220,38,38,0.4)", borderRadius: 6, padding: "4px 6px" }}
               value={devices.some((d) => d.deviceId === deviceId) ? deviceId : ""}
@@ -163,13 +169,7 @@ export function VoiceStrip({
         )}
       </div>
 
-      {engine === "web-speech" && devices.length > 0 && (
-        <div style={{ fontSize: 12, color: "var(--jg-text-secondary)" }}>
-          El selector de micrófono no aplica al reconocimiento de Chrome (Web Speech): usa el micrófono predeterminado de Windows. Solo vale para el modo local.
-        </div>
-      )}
-
-      {engine && (
+            {engine && (
         <div data-testid="privacy-notice" style={{ fontSize: 12, color: "var(--jg-text-secondary)" }}>
           {PRIVACY_NOTICE[engine]}
         </div>

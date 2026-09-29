@@ -21,7 +21,7 @@ export interface SystemPanelProps {
 }
 
 const STT_LABEL: Record<SttEngine, string> = {
-  "web-speech": "Web Speech · Chrome (es-ES)",
+  "web-speech": "Navegador (Web Speech · es-ES)",
   local: "Local · faster-whisper",
 };
 

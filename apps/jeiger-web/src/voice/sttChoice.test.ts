@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   chooseSttEngine,
+  defaultSttPreference,
+  isEdgeUserAgent,
   offersLocalSwitch,
   readSttPreference,
+  showsMicSelector,
   speechRecognitionLang,
   STT_PREFERENCE_LABEL,
   writeSttPreference,
@@ -21,6 +24,9 @@ function memoryStorage(initial: Record<string, string> = {}) {
     },
   };
 }
+
+const CHROME_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+const EDGE_UA = `${CHROME_UA} Edg/126.0.0.0`;
 
 const brokenStorage = {
   getItem: () => {
@@ -42,14 +48,14 @@ describe("forcing the local engine (F3-04)", () => {
   it("remembers the choice and survives storage that throws", () => {
     const storage = memoryStorage();
 
-    expect(readSttPreference(storage)).toBe("auto");
+    expect(readSttPreference(storage, CHROME_UA)).toBe("auto");
     writeSttPreference("local", storage);
     expect(readSttPreference(storage)).toBe("local");
     expect(() => writeSttPreference("local", brokenStorage)).not.toThrow();
-    expect(readSttPreference(brokenStorage)).toBe("auto");
+    expect(readSttPreference(brokenStorage, CHROME_UA)).toBe("auto");
   });
 
-  it("offers the switch after silence or a blocked mic in Chrome mode, and only then", () => {
+  it("offers the switch after silence or a blocked mic in browser mode, and only then", () => {
     expect(offersLocalSwitch("no-speech", "web-speech")).toBe(true);
     expect(offersLocalSwitch("permission-denied", "web-speech")).toBe(true);
     expect(offersLocalSwitch("no-speech", "local")).toBe(false);
@@ -58,7 +64,7 @@ describe("forcing the local engine (F3-04)", () => {
   });
 
   it("names both engines in Spanish for the selector", () => {
-    expect(STT_PREFERENCE_LABEL.auto).toMatch(/Chrome/);
+    expect(STT_PREFERENCE_LABEL.auto).toMatch(/Web Speech/);
     expect(STT_PREFERENCE_LABEL.local).toMatch(/Whisper/);
   });
 });
@@ -79,5 +85,29 @@ describe("the two microphone buttons stay distinguishable (F3-05)", () => {
     expect(speakToggleLabel(true)).not.toBe(speakToggleLabel(false));
     expect(MIC_LABEL.idle).toBe("Dictar");
     expect(MIC_LABEL.idle).not.toMatch(/Respuestas/);
+  });
+});
+
+describe("default recognition mode", () => {
+  it("defaults to local in Edge and to the browser recognizer elsewhere", () => {
+    expect(isEdgeUserAgent(EDGE_UA)).toBe(true);
+    expect(isEdgeUserAgent(CHROME_UA)).toBe(false);
+    expect(defaultSttPreference(EDGE_UA)).toBe("local");
+    expect(defaultSttPreference(CHROME_UA)).toBe("auto");
+    expect(defaultSttPreference(undefined)).toBe("auto");
+  });
+
+  it("lets a saved choice override the browser default, including a saved auto in Edge", () => {
+    expect(readSttPreference(memoryStorage(), EDGE_UA)).toBe("local");
+    expect(readSttPreference(memoryStorage({ "jeiger.sttPreference": "auto" }), EDGE_UA)).toBe("auto");
+    expect(readSttPreference(memoryStorage({ "jeiger.sttPreference": "local" }), CHROME_UA)).toBe("local");
+    expect(readSttPreference(brokenStorage, EDGE_UA)).toBe("local");
+  });
+
+  it("shows the microphone picker only for the local recognizer", () => {
+    expect(showsMicSelector("local", null)).toBe(true);
+    expect(showsMicSelector("auto", "local")).toBe(true);
+    expect(showsMicSelector("auto", "web-speech")).toBe(false);
+    expect(showsMicSelector("auto", null)).toBe(false);
   });
 });

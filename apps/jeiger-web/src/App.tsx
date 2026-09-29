@@ -398,6 +398,7 @@ export default function App() {
         flexDirection: "column",
         gap: 16,
         height: "100vh",
+        overflowY: "auto",
         padding: "20px 28px 24px",
         background: "radial-gradient(ellipse at 50% 46%, rgba(220,38,38,0.15), rgba(12,6,7,0) 62%), var(--jg-bg)",
       }}
@@ -483,7 +484,7 @@ export default function App() {
         </div>
       )}
 
-      <main style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: 0 }}>
+      <main style={{ display: "flex", gap: 20, flex: "1 1 0", minHeight: 640 }}>
         <SystemPanel provider={provider} providerStatus={currentProviderStatus} speakReplies={speech.enabled} sttEngine={voice.engine} voiceConfig={voiceConfig} />
 
         <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
