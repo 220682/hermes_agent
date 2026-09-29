@@ -59,4 +59,14 @@ describe("echo guard (F3-22c)", () => {
     expect(isEcho("ahora muéstrame el estado del repositorio en git", reply)).toBe(false);
     expect(isEcho("el servidor", reply)).toBe(false);
   });
+
+  it("keeps a legitimate question that only shares words with the reply", () => {
+    expect(isEcho("¿Cuál es la capital de Perú?", "La capital de Perú es Lima.")).toBe(false);
+  });
+
+  it("drops a literal or near-literal copy of the reply", () => {
+    expect(isEcho(reply, reply)).toBe(true);
+    expect(isEcho(`bueno ${reply}`, reply)).toBe(true);
+    expect(isEcho(`${reply} gracias`, reply)).toBe(true);
+  });
 });

@@ -7,8 +7,8 @@ export const MIN_VOICE_MS = 400;
 /** A gap between two mic frames longer than this (throttled tab) is not counted as voice. */
 const MAX_FRAME_GAP_MS = 100;
 
-export const ECHO_WORD_SHARE = 0.6;
-const ECHO_MIN_WORDS = 3;
+export const ECHO_WORD_SHARE = 0.8;
+const ECHO_MIN_WORDS = 4;
 const MIN_TRANSCRIPT_CHARS = 3;
 
 /** Typical Whisper (Spanish) inventions over silence or noise, normalized (lowercase, no accents or
@@ -63,7 +63,8 @@ export function isHallucination(text: string, phrases: readonly string[] = HALLU
   return phrases.some((phrase) => joined.includes(phrase) && words.length <= phrase.split(" ").length + HALLUCINATION_EXTRA_WORDS);
 }
 
-/** Does the transcript mostly repeat the last spoken reply? (>= ECHO_WORD_SHARE of its words appear in it.) */
+/** Is the transcript a copy of the last spoken reply? A contiguous run of its words that appears the same and in
+ * sequence in the reply must cover >= ECHO_WORD_SHARE of the transcript (shared words alone are not echo). */
 export function isEcho(text: string, lastSpoken: string): boolean {
   const words = normalizeWords(text);
 
@@ -71,9 +72,22 @@ export function isEcho(text: string, lastSpoken: string): boolean {
     return false;
   }
 
-  const spoken = new Set(normalizeWords(lastSpoken));
+  const spoken = normalizeWords(lastSpoken);
+  let longest = 0;
 
-  return words.filter((word) => spoken.has(word)).length / words.length >= ECHO_WORD_SHARE;
+  for (let i = 0; i < words.length; i++) {
+    for (let j = 0; j < spoken.length; j++) {
+      let run = 0;
+
+      while (i + run < words.length && j + run < spoken.length && words[i + run] === spoken[j + run]) {
+        run++;
+      }
+
+      longest = Math.max(longest, run);
+    }
+  }
+
+  return longest / words.length >= ECHO_WORD_SHARE;
 }
 
 export type TranscriptVerdict = { keep: true; text: string } | { keep: false; reason: "empty" | "hallucination" | "echo" };
