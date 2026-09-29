@@ -54,7 +54,9 @@ def _should_stream(agent: Any) -> bool:
     _base = str(agent.base_url or "").lower()
     from hermes_cli.runtime_provider_backends import _is_external_process_provider
 
-    if _base.startswith(("acp://", "acp+tcp://")) or _is_external_process_provider(agent.provider):
+    _client_streams = getattr(getattr(agent, "client", None), "HERMES_CLIENT_STREAMS", False) is True
+    if not _client_streams and (
+            _base.startswith(("acp://", "acp+tcp://")) or _is_external_process_provider(agent.provider)):
         return False
     if not agent._has_stream_consumers():
         if agent.provider == "moa":

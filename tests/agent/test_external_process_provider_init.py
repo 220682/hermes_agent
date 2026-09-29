@@ -97,3 +97,19 @@ def test_should_stream_is_off_for_any_external_process_profile(monkeypatch):
 
     assert _should_stream(make("acme-acp")) is False
     assert _should_stream(make("acme-http")) is True
+
+
+def test_should_stream_when_an_acp_client_declares_real_streaming(monkeypatch):
+    """A CLI brain (``acp://claude-cli``) yields true chunks, so the turn loop must stream it; the flag is
+    read from the client, so other ACP providers keep their folded reply."""
+    from agent.cli_brain import CliBrainClient, CliProtocol
+    from agent.turn_api_call import _should_stream
+    from providers.base import ProviderProfile
+
+    profile = ProviderProfile(name="acme-acp", auth_type="external_process")
+    monkeypatch.setattr("providers.get_provider_profile", lambda name: profile if name == "acme-acp" else None)
+    make = lambda client: SimpleNamespace(  # noqa: E731
+        provider="acme-acp", base_url="acp://acme", client=client, _has_stream_consumers=lambda: True)
+
+    assert _should_stream(make(CliBrainClient(CliProtocol()))) is True
+    assert _should_stream(make(SimpleNamespace())) is False

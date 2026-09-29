@@ -399,6 +399,7 @@ class CliBrainClient:
 
     HERMES_SKIP_TRANSPORT_WRAP = True
     HERMES_SKIP_ASYNC_WRAP = True
+    HERMES_CLIENT_STREAMS = True  # create(stream=True) yields real chunks, so the turn loop must not force a folded reply
 
     def __init__(self, protocol: CliProtocol, *, command: str | None = None, args: list[str] | None = None,
                  api_key: str | None = None, base_url: str | None = None, **_: Any) -> None:
