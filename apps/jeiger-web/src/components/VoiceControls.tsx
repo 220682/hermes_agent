@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 
 import type { AudioInput } from "@/voice/micStream";
+import { HEADSET_LINE } from "@/voice/noiseGate";
 import { SILENCE_OPTIONS_MS } from "@/voice/silence";
 import { offersLocalSwitch, PRIVACY_NOTICE, showsMicSelector, STT_PREFERENCE_LABEL, type SttEngine, type SttPreference } from "@/voice/sttEngine";
 import type { VoiceStatus } from "@/voice/useVoiceInput";
@@ -76,6 +77,10 @@ export interface VoiceStripProps {
   /** The autonomous loop is running: shows the Detener button. */
   loopOn: boolean;
   onStopLoop: () => void;
+  /** F3-17 heuristic gate: on = only levels well above the measured background count as voice. */
+  ignoreNoise: boolean;
+  measuringNoise: boolean;
+  onToggleIgnoreNoise: () => void;
 }
 
 /** Live transcript, level bar, mic selector, privacy notice and error notice (F3-02/03/09/13). */
@@ -97,6 +102,9 @@ export function VoiceStrip({
   onModeChange,
   loopOn,
   onStopLoop,
+  ignoreNoise,
+  measuringNoise,
+  onToggleIgnoreNoise,
 }: VoiceStripProps) {
   const busy = status !== "idle";
 
@@ -195,6 +203,26 @@ export function VoiceStrip({
           ))}
         </select>
       </label>
+
+      <button
+        aria-pressed={ignoreNoise}
+        disabled={busy || measuringNoise || engine === "web-speech"}
+        onClick={onToggleIgnoreNoise}
+        style={{
+          flexShrink: 0,
+          padding: "2px 8px",
+          fontSize: 12,
+          color: "var(--jg-text)",
+          border: `1px solid ${ignoreNoise ? "var(--jg-red-light)" : "rgba(220,38,38,0.4)"}`,
+          borderRadius: 6,
+          background: ignoreNoise ? "rgba(220,38,38,0.35)" : "transparent",
+          opacity: engine === "web-speech" ? 0.5 : 1,
+        }}
+        title={engine === "web-speech" ? "Solo con reconocimiento local. " + HEADSET_LINE : HEADSET_LINE}
+        type="button"
+      >
+        {measuringNoise ? "Midiendo ruido…" : ignoreNoise ? "Ignorando sonido del sistema" : "Ignorar sonido del sistema"}
+      </button>
 
       {engine && (
         <span data-testid="privacy-notice" style={{ flexShrink: 0 }} title={PRIVACY_NOTICE[engine]}>

@@ -13,6 +13,7 @@ import { type ConversationEvent, initialConversationState, type OrbState, reduce
 import { createGatewayClient, createSession, gatewayWsUrl, interruptSession, type ProviderId, resumeSession, submitPrompt } from "@/gateway";
 import { fetchProvidersStatus, type ProvidersStatus, ProvidersStatusError } from "@/providersApi";
 import { recoverSession, type SessionHandle } from "@/sessionRecovery";
+import { HEADSET_LINE, isFloorTooHigh, measureNoiseFloor, voiceLevelFor } from "@/voice/noiseGate";
 import type { OrbAudioDriver } from "@/voice/orbAudio";
 import { readSilenceMs, writeSilenceMs } from "@/voice/silence";
 import { decideSpaceAction } from "@/voice/spaceKey";
@@ -20,7 +21,7 @@ import { fetchVoiceConfig, type VoiceConfigSummary } from "@/voice/speakApi";
 import { createTurnSpeechRouter } from "@/voice/turnSpeech";
 import { useSpeechOutput } from "@/voice/useSpeechOutput";
 import { useVoiceInput, type VoiceStatus } from "@/voice/useVoiceInput";
-import type { VoiceIssueCode } from "@/voice/voiceIssues";
+import { classifyMicError, type VoiceIssueCode } from "@/voice/voiceIssues";
 import { recordLatency } from "@/voice/voiceMetrics";
 import { initialVoiceLoop, readVoiceMode, reduceVoiceLoop, usesSilenceDetection, type VoiceLoopEvent, type VoiceMode, writeVoiceMode } from "@/voice/voiceMode";
 
@@ -322,6 +323,9 @@ export default function App() {
   // Voice modes (F3-16): the autonomous loop reopens the mic after each spoken reply.
   const [voiceMode, setVoiceMode] = useState<VoiceMode>(readVoiceMode);
   const [loopOn, setLoopOn] = useState(false);
+  const [ignoreNoise, setIgnoreNoise] = useState(false);
+  const [noiseFloor, setNoiseFloor] = useState<number | null>(null);
+  const [measuringNoise, setMeasuringNoise] = useState(false);
   const loopRef = useRef(initialVoiceLoop(voiceMode));
   const awaitingReplyRef = useRef(false);
   const voiceRef = useRef<{ status: VoiceStatus; toggle: () => Promise<void>; cancel: () => void } | null>(null);
@@ -450,6 +454,7 @@ export default function App() {
       void handleSubmitRef.current(text);
     },
     silenceMs: usesSilenceDetection(voiceMode) ? silenceMs : null,
+    voiceLevel: voiceLevelFor(ignoreNoise ? noiseFloor : null),
     onLevel: (level) => {
       if (levelRef.current) {
         levelRef.current.style.transform = `scaleX(${level})`;
@@ -473,10 +478,40 @@ export default function App() {
   }, [conversation.orb, speech.speaking]);
 
   useEffect(() => {
-    if (voice.issue !== null || speechIssue !== null) {
+    // "noise-high" is advice, not a failure: the loop keeps going.
+    if (voice.issue !== null || (speechIssue !== null && speechIssue !== "noise-high")) {
       dispatchLoopRef.current({ type: "voice.error" });
     }
   }, [voice.issue, speechIssue]);
+
+  // F3-17: one second of background noise sets the bar voice must clear (a heuristic, not a filter).
+  const handleToggleIgnoreNoise = async () => {
+    if (ignoreNoise) {
+      setIgnoreNoise(false);
+      setNoiseFloor(null);
+      setSpeechIssue((code) => (code === "noise-high" ? null : code));
+
+      return;
+    }
+
+    setMeasuringNoise(true);
+    setSpeechIssue(null);
+
+    try {
+      const floor = await measureNoiseFloor(navigator.mediaDevices, voice.deviceId || undefined);
+
+      setNoiseFloor(floor);
+      setIgnoreNoise(true);
+
+      if (isFloorTooHigh(floor)) {
+        setSpeechIssue("noise-high");
+      }
+    } catch (error) {
+      setSpeechIssue(classifyMicError(error));
+    } finally {
+      setMeasuringNoise(false);
+    }
+  };
 
   const handleModeChange = (mode: VoiceMode) => {
     setVoiceMode(mode);
@@ -619,9 +654,11 @@ export default function App() {
         deviceId={voice.deviceId}
         devices={voice.devices}
         engine={voice.engine}
+        ignoreNoise={ignoreNoise}
         issues={[...new Set([voice.issue, speechIssue])].filter((code): code is VoiceIssueCode => code !== null)}
         levelRef={levelRef}
         loopOn={loopOn}
+        measuringNoise={measuringNoise}
         mode={voiceMode}
         onDeviceChange={voice.setDeviceId}
         onModeChange={handleModeChange}
@@ -631,12 +668,19 @@ export default function App() {
           writeSilenceMs(ms);
         }}
         onStopLoop={handleInterrupt}
+        onToggleIgnoreNoise={() => void handleToggleIgnoreNoise()}
         partial={partial}
         preference={voice.preference}
         silenceMs={silenceMs}
         status={voice.status}
         webSpeechAvailable={voice.webSpeechAvailable}
       />
+
+      {ignoreNoise && (
+        <div role="note" style={{ flexShrink: 0, fontSize: 12, color: "var(--jg-text-secondary)" }}>
+          {HEADSET_LINE}
+        </div>
+      )}
 
       <Composer
         disabled={composerDisabled}

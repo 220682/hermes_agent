@@ -9,6 +9,7 @@ export type VoiceIssueCode =
   | "stt-unavailable"
   | "autoplay-blocked"
   | "tts-unavailable"
+  | "noise-high"
   | "unknown";
 
 const TEXT_TAIL = "Puedes seguir escribiendo en el campo de texto.";
@@ -22,6 +23,7 @@ const MESSAGES: Record<VoiceIssueCode, string> = {
   "stt-unavailable": `El reconocimiento de voz no responde. ${TEXT_TAIL}`,
   "autoplay-blocked": `El navegador bloqueó la reproducción de audio hasta que interactúes con la página. Pulsa cualquier botón y vuelve a intentarlo. ${TEXT_TAIL}`,
   "tts-unavailable": `La voz de respuesta no está disponible. La respuesta se muestra como texto.`,
+  "noise-high": "El ruido de fondo es muy alto; usa auriculares para que JEIGER te distinga.",
   unknown: `Falló la voz. ${TEXT_TAIL}`,
 };
 
