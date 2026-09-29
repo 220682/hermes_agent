@@ -32,6 +32,9 @@ export interface VoiceInputOptions {
   silenceMs: number | null;
   /** F3-17: mic level that counts as voice (local engine). Defaults to the base level. */
   voiceLevel?: number;
+  /** F3-21: a recording yielded nothing to send. Returns true when the caller handled it silently
+   * (the autonomous loop listens again); otherwise the "no-speech" notice is shown. */
+  onEmpty?: () => boolean;
 }
 
 function readSavedDevice(): string {
@@ -42,7 +45,7 @@ function readSavedDevice(): string {
   }
 }
 
-export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel = BASE_VOICE_LEVEL }: VoiceInputOptions) {
+export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel = BASE_VOICE_LEVEL, onEmpty }: VoiceInputOptions) {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [engine, setEngine] = useState<SttEngine | null>(null);
   const [issue, setIssue] = useState<VoiceIssueCode | null>(null);
@@ -57,9 +60,15 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
   const [preference, setPreferenceState] = useState<SttPreference>(() => readSttPreference());
   const discardRef = useRef(false);
   const frameRef = useRef<((level: number) => void) | null>(null);
-  const cbRef = useRef({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel });
+  const cbRef = useRef({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel, onEmpty });
 
-  cbRef.current = { onPartialText, onFinalText, onLevel, silenceMs, voiceLevel };
+  cbRef.current = { onPartialText, onFinalText, onLevel, silenceMs, voiceLevel, onEmpty };
+
+  const reportEmpty = useCallback(() => {
+    if (!cbRef.current.onEmpty?.()) {
+      setIssue("no-speech");
+    }
+  }, []);
 
   const releaseMic = useCallback(() => {
     stopMeterRef.current?.();
@@ -171,8 +180,8 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
       };
 
       rec.onerror = (e) => {
-        if (e.error === "aborted") {
-          return; // our own cancel (Esc / Detener), not a failure
+        if (e.error === "aborted" || e.error === "no-speech") {
+          return; // our own cancel (Esc / Detener), or nothing heard: `onend` reports it as empty, not as a failure
         }
 
         failed = true;
@@ -201,14 +210,14 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
         } else if (sent) {
           cbRef.current.onFinalText(sent);
         } else if (!failed) {
-          setIssue("no-speech");
+          reportEmpty();
         }
       };
 
       recognizerRef.current = rec;
       rec.start();
     },
-    [releaseMic],
+    [releaseMic, reportEmpty],
   );
 
   const startLocal = useCallback(
@@ -272,7 +281,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
             if (text) {
               cbRef.current.onFinalText(text);
             } else {
-              setIssue("no-speech");
+              reportEmpty();
             }
           })
           .catch(() => setIssue("stt-unavailable"))
@@ -282,7 +291,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
       recorderRef.current = recorder;
       recorder.start();
     },
-    [releaseMic],
+    [releaseMic, reportEmpty],
   );
 
   /** Esc / Detener: closes the mic without sending what was heard. */

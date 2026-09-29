@@ -24,7 +24,19 @@ import { useSpeechOutput } from "@/voice/useSpeechOutput";
 import { useVoiceInput, type VoiceStatus } from "@/voice/useVoiceInput";
 import { classifyMicError, type VoiceIssueCode } from "@/voice/voiceIssues";
 import { recordLatency } from "@/voice/voiceMetrics";
-import { initialVoiceLoop, readVoiceMode, reduceVoiceLoop, usesSilenceDetection, type VoiceLoopEvent, type VoiceMode, writeVoiceMode } from "@/voice/voiceMode";
+import {
+  initialVoiceLoop,
+  loopPhase,
+  micReopenReady,
+  readVoiceMode,
+  reduceVoiceLoop,
+  REOPEN_AFTER_EMPTY_MS,
+  REOPEN_AFTER_REPLY_MS,
+  usesSilenceDetection,
+  type VoiceLoopEvent,
+  type VoiceMode,
+  writeVoiceMode,
+} from "@/voice/voiceMode";
 
 const ORB_PILL: Record<string, { label: string; color: string }> = {
   idle: { label: "EN REPOSO", color: "var(--jg-crimson)" },
@@ -361,7 +373,7 @@ export default function App() {
 
   // Voice modes (F3-16): the autonomous loop reopens the mic after each spoken reply.
   const [voiceMode, setVoiceMode] = useState<VoiceMode>(readVoiceMode);
-  const [loopOn, setLoopOn] = useState(false);
+  const [, setLoopTick] = useState(0); // re-renders when the loop changes; the state itself lives in loopRef only
   const [ignoreNoise, setIgnoreNoise] = useState(false);
   const [noiseFloor, setNoiseFloor] = useState<number | null>(null);
   const [measuringNoise, setMeasuringNoise] = useState(false);
@@ -369,25 +381,57 @@ export default function App() {
   const awaitingReplyRef = useRef(false);
   const voiceRef = useRef<{ status: VoiceStatus; toggle: () => Promise<void>; cancel: () => void } | null>(null);
 
+  const reopenTimerRef = useRef<number | undefined>(undefined);
+
+  const clearReopen = () => {
+    window.clearTimeout(reopenTimerRef.current);
+    reopenTimerRef.current = undefined;
+  };
+
+  // Reopening is not a single attempt: it waits, polling, until orb, TTS and microphone are all at rest,
+  // and gives up only when the loop is switched off.
+  const scheduleReopen = (delayMs: number) => {
+    clearReopen();
+
+    const attempt = () => {
+      reopenTimerRef.current = undefined;
+
+      if (!loopRef.current.loopOn) {
+        return;
+      }
+
+      const ready = micReopenReady({
+        loopOn: true,
+        orb: orbRef.current,
+        speaking: speakingRef.current,
+        micStatus: voiceRef.current?.status ?? "requesting",
+      });
+
+      if (ready) {
+        void voiceRef.current?.toggle();
+      } else {
+        reopenTimerRef.current = window.setTimeout(attempt, 250);
+      }
+    };
+
+    reopenTimerRef.current = window.setTimeout(attempt, delayMs);
+  };
+
+  useEffect(() => clearReopen, []);
+
   const dispatchLoop = (event: VoiceLoopEvent) => {
     const result = reduceVoiceLoop(loopRef.current, event);
 
     loopRef.current = result.state;
-    setLoopOn(result.state.loopOn);
+    setLoopTick((tick) => tick + 1);
 
     if (!result.state.loopOn) {
       awaitingReplyRef.current = false;
+      clearReopen();
     }
 
     if (result.reopen) {
-      // Small delay: the TTS can start a moment after the turn ends, and must not be recorded.
-      window.setTimeout(() => {
-        const idle = orbRef.current === "idle" && !speakingRef.current && voiceRef.current?.status === "idle";
-
-        if (loopRef.current.loopOn && idle) {
-          void voiceRef.current?.toggle();
-        }
-      }, 400);
+      scheduleReopen(event.type === "voice.empty" ? REOPEN_AFTER_EMPTY_MS : REOPEN_AFTER_REPLY_MS);
     }
   };
 
@@ -506,7 +550,17 @@ export default function App() {
     onPartialText: setPartial,
     onFinalText: (text) => {
       awaitingReplyRef.current = loopRef.current.loopOn;
+      dispatchLoopRef.current({ type: "voice.heard" });
       void handleSubmitRef.current(text);
+    },
+    onEmpty: () => {
+      if (!loopRef.current.loopOn) {
+        return false;
+      }
+
+      dispatchLoopRef.current({ type: "voice.empty" }); // nothing to send is not a failure: listen again
+
+      return true;
     },
     silenceMs: usesSilenceDetection(voiceMode) ? silenceMs : null,
     voiceLevel: voiceLevelFor(ignoreNoise ? noiseFloor : null),
@@ -533,8 +587,10 @@ export default function App() {
   }, [conversation.orb, speech.speaking]);
 
   useEffect(() => {
-    // "noise-high" is advice, not a failure: the loop keeps going.
-    if (voice.issue !== null || (speechIssue !== null && speechIssue !== "noise-high")) {
+    // Advice ("noise-high") and an empty recording ("no-speech") are not failures: the loop keeps going.
+    const advisory = (code: VoiceIssueCode | null) => code === null || code === "noise-high" || code === "no-speech";
+
+    if (!advisory(voice.issue) || !advisory(speechIssue)) {
       dispatchLoopRef.current({ type: "voice.error" });
     }
   }, [voice.issue, speechIssue]);
@@ -726,9 +782,10 @@ export default function App() {
         devices={voice.devices}
         engine={voice.engine}
         ignoreNoise={ignoreNoise}
-        issues={[...new Set([voice.issue, speechIssue])].filter((code): code is VoiceIssueCode => code !== null)}
+        issues={[...new Set<VoiceIssueCode | null>([voice.issue, speechIssue, loopRef.current.gaveUp ? "loop-gave-up" : null])].filter((code): code is VoiceIssueCode => code !== null)}
         levelRef={levelRef}
-        loopOn={loopOn}
+        loopOn={loopRef.current.loopOn}
+        loopPhase={loopPhase({ loopOn: loopRef.current.loopOn, micStatus: voice.status, orb: conversation.orb, speaking: speech.speaking })}
         measuringNoise={measuringNoise}
         mode={voiceMode}
         onDeviceChange={voice.setDeviceId}

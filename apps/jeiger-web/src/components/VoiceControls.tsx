@@ -7,7 +7,7 @@ import { offersLocalSwitch, PRIVACY_NOTICE, showsMicSelector, STT_PREFERENCE_LAB
 import type { VoiceStatus } from "@/voice/useVoiceInput";
 import { type VoiceIssueCode, voiceIssueMessage } from "@/voice/voiceIssues";
 import { MIC_LABEL } from "@/voice/voiceLabels";
-import { VOICE_MODE_HINT, VOICE_MODE_LABEL, VOICE_MODES, type VoiceMode } from "@/voice/voiceMode";
+import { LOOP_PHASE_LABEL, type LoopPhase, VOICE_MODE_HINT, VOICE_MODE_LABEL, VOICE_MODES, type VoiceMode } from "@/voice/voiceMode";
 
 const PRIVACY_SHORT: Record<SttEngine, string> = {
   "web-speech": "Audio: servicio del navegador",
@@ -76,6 +76,8 @@ export interface VoiceStripProps {
   onModeChange: (mode: VoiceMode) => void;
   /** The autonomous loop is running: shows the Detener button. */
   loopOn: boolean;
+  /** What the running loop is doing now (F3-21); null when it is off. */
+  loopPhase: LoopPhase | null;
   onStopLoop: () => void;
   /** F3-17 heuristic gate: on = only levels well above the measured background count as voice. */
   ignoreNoise: boolean;
@@ -101,6 +103,7 @@ export function VoiceStrip({
   mode,
   onModeChange,
   loopOn,
+  loopPhase,
   onStopLoop,
   ignoreNoise,
   measuringNoise,
@@ -181,6 +184,12 @@ export function VoiceStrip({
           ))}
         </select>
       </label>
+
+      {loopOn && loopPhase && (
+        <span aria-live="polite" data-testid="loop-phase" style={{ flexShrink: 0, color: "var(--jg-red-pale)", fontWeight: 600 }}>
+          {LOOP_PHASE_LABEL[loopPhase]}
+        </span>
+      )}
 
       {loopOn && (
         <button

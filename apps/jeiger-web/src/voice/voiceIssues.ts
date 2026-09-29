@@ -1,3 +1,5 @@
+import { LOOP_GAVE_UP_MESSAGE } from "./voiceMode";
+
 /** F3-09: every voice failure maps to a short Spanish notice that ends on the text field. */
 
 export type VoiceIssueCode =
@@ -10,6 +12,7 @@ export type VoiceIssueCode =
   | "autoplay-blocked"
   | "tts-unavailable"
   | "noise-high"
+  | "loop-gave-up"
   | "unknown";
 
 const TEXT_TAIL = "Puedes seguir escribiendo en el campo de texto.";
@@ -24,6 +27,7 @@ const MESSAGES: Record<VoiceIssueCode, string> = {
   "autoplay-blocked": `El navegador bloqueó la reproducción de audio hasta que interactúes con la página. Pulsa cualquier botón y vuelve a intentarlo. ${TEXT_TAIL}`,
   "tts-unavailable": `La voz de respuesta no está disponible. La respuesta se muestra como texto.`,
   "noise-high": "El ruido de fondo es muy alto; usa auriculares para que JEIGER te distinga.",
+  "loop-gave-up": LOOP_GAVE_UP_MESSAGE,
   unknown: `Falló la voz. ${TEXT_TAIL}`,
 };
 

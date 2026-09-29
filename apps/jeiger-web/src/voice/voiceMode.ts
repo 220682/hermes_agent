@@ -44,38 +44,109 @@ export function usesSilenceDetection(mode: VoiceMode): boolean {
   return mode !== "manual";
 }
 
+/** Empty recordings in a row the autonomous loop tolerates before it gives up (F3-21). */
+export const MAX_EMPTY_RECORDINGS = 5;
+
+export const REOPEN_AFTER_REPLY_MS = 400;
+export const REOPEN_AFTER_EMPTY_MS = 300;
+
+export const LOOP_GAVE_UP_MESSAGE = "No te oigo, modo autónomo detenido.";
+
 export interface VoiceLoopState {
   mode: VoiceMode;
   /** The autonomous loop is running: the mic reopens after each reply. */
   loopOn: boolean;
+  /** Recordings in a row that yielded nothing to send (silence, noise, hallucination, echo). */
+  emptyStreak: number;
+  /** The loop stopped by itself after too many empty recordings; cleared by the next user action. */
+  gaveUp: boolean;
 }
 
 export type VoiceLoopEvent =
   | { type: "mic.started" }
   | { type: "reply.finished" }
+  /** A recording produced nothing worth sending. Not a failure: the loop listens again. */
+  | { type: "voice.empty" }
+  /** Something real was heard and sent. */
+  | { type: "voice.heard" }
   | { type: "voice.error" }
   | { type: "user.stopped" }
   | { type: "mode.changed"; mode: VoiceMode };
 
-export const initialVoiceLoop = (mode: VoiceMode): VoiceLoopState => ({ mode, loopOn: false });
+export const initialVoiceLoop = (mode: VoiceMode): VoiceLoopState => ({ mode, loopOn: false, emptyStreak: 0, gaveUp: false });
 
 /** `reopen` asks the caller to switch the microphone on again. */
 export function reduceVoiceLoop(state: VoiceLoopState, event: VoiceLoopEvent): { state: VoiceLoopState; reopen: boolean } {
   switch (event.type) {
     case "mic.started":
-      return { state: { ...state, loopOn: state.mode === "autonomous" }, reopen: false };
+      return { state: { ...state, loopOn: state.mode === "autonomous", emptyStreak: 0, gaveUp: false }, reopen: false };
 
     case "reply.finished":
       return { state, reopen: state.loopOn };
 
-    // An error (mic, recognition, playback, silence) or the user (Esc, Detener, interrupt) ends the loop:
+    case "voice.heard":
+      return { state: { ...state, emptyStreak: 0 }, reopen: false };    case "voice.empty": {
+      if (!state.loopOn) {
+        return { state, reopen: false };
+      }
+
+      const emptyStreak = state.emptyStreak + 1;
+
+      if (emptyStreak > MAX_EMPTY_RECORDINGS) {
+        return { state: { ...state, loopOn: false, emptyStreak: 0, gaveUp: true }, reopen: false };
+      }
+
+      return { state: { ...state, emptyStreak }, reopen: true };
+    }
+
+    // A real error (mic, permission, failed turn) or the user (Esc, Detener, interrupt) ends the loop:
     // reopening a broken or unwanted mic would spin forever.
     case "voice.error":
 
     case "user.stopped":
-      return { state: { ...state, loopOn: false }, reopen: false };
+      return { state: { ...state, loopOn: false, emptyStreak: 0 }, reopen: false };
 
     case "mode.changed":
-      return { state: { mode: event.mode, loopOn: false }, reopen: false };
+      return { state: { mode: event.mode, loopOn: false, emptyStreak: 0, gaveUp: false }, reopen: false };
   }
+}
+
+export type LoopPhase = "listening" | "thinking" | "speaking";
+
+export const LOOP_PHASE_LABEL: Record<LoopPhase, string> = {
+  listening: "Escuchando",
+  thinking: "Pensando",
+  speaking: "Hablando",
+};
+
+/** What the running loop is doing, derived from the real states (never stored): null when it is off. */
+export function loopPhase(input: {
+  loopOn: boolean;
+  micStatus: "idle" | "requesting" | "listening" | "transcribing";
+  orb: string;
+  speaking: boolean;
+}): LoopPhase | null {
+  if (!input.loopOn) {
+    return null;
+  }
+
+  if (input.speaking) {
+    return "speaking";
+  }
+
+  if (input.micStatus === "transcribing" || input.orb === "thinking" || input.orb === "responding") {
+    return "thinking";
+  }
+
+  return "listening";
+}
+
+/** Is everything at rest so the microphone can reopen? Polled by the caller until it is true. */
+export function micReopenReady(input: {
+  loopOn: boolean;
+  orb: string;
+  speaking: boolean;
+  micStatus: "idle" | "requesting" | "listening" | "transcribing";
+}): boolean {
+  return input.loopOn && input.orb === "idle" && !input.speaking && input.micStatus === "idle";
 }
