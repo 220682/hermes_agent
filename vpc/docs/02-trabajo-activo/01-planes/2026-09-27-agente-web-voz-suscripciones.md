@@ -355,6 +355,7 @@ Los del Spec ("Riesgos y decisiones pendientes") siguen vigentes. Añade el Plan
 | 2026-09-29 | Guardia de eco (commit `cb31232095`): el arnés mostró un falso positivo (la pregunta "¿Cuál es la capital de Perú?" se descartaba tras "La capital de Perú es Lima."). Se cambió de 60 % de palabras comunes a una racha contigua de palabras que cubra ≥ 80 % de la transcripción y mínimo 4 palabras. Riesgo: puede dejar pasar un eco parcial. Solo tiene test unitario; no se repitió E2E. | Orquestador (Sonnet), ajustado tras el hallazgo del Auditor |
 | 2026-09-29 | Modelo STT `small` (~460 MB, `faster-whisper`): descargado y configurado en `stt.local.model` con la autorización del Responsable humano en el chat; carga en ~38 s la primera vez. Es más exacto pero más lento que `base`; latencia real por medir en su uso. | Responsable humano (autorizó); Orquestador (ejecutó) |
 | 2026-09-29 | Auditoría de F3 (Auditor, solo lectura): sin bloqueantes; 4 importantes documentales y 1 riesgo de código (`openMic` en `useVoiceInput.ts`, corregido en un Worker). Deuda anotada, no corregida: `App()` de ~836 líneas supera el umbral de 300 de `AGENTS.md`; se propone partirla en hooks en un plan propio. | Orquestador (Sonnet) |
+| 2026-09-29 | El Responsable humano probó el modelo STT `small`: transcribe en 3 a 5 s; se deja así por ahora y se mejorará después (medido por él, no por el arnés). Confirmó que el orbe funciona bien. La prueba con música sonando queda pendiente (F3-13 y F3-17/24 siguen `Observado`). | Responsable humano |
 
 ## Enlaces a progreso y evidencia homónimos
 
