@@ -232,3 +232,60 @@ Entorno: `hermes serve --port 9119` (token cargado por script desde `.env.local`
 - Tests con `scripts/run_tests.sh` (HERMES_PYTHON = test-environment, el runner no activaba por falta de bootstrap): test_external_process_provider_init, test_cli_brain, test_cli_brain_providers, test_acp_provider_rails = 28 verdes.
 - Llamada real 1 (sonda WS, poema de 30 versos, `session.interrupt` tras 3 deltas): `message.start` 16.4 s, `thinking.delta`, primer `message.delta` 20.7 s, `session.interrupt` ok, `message.complete status=interrupted` con 7 deltas. Sin token en la salida.
 - Llamada real 2 (UI, 20 líneas): respuesta completa y orbe en reposo; no alcancé a capturar PENSANDO/RESPONDIENDO (turno más rápido que la herramienta). Sin capturas guardadas.
+
+
+## F2 tanda C — Errores, accesibilidad, responsive y cierre (2026-09-29, Worker local-worker-2)
+
+Código: commits `191a2cdb14` (limpieza de logs) y `0049687ca6` (tanda C) en `local-worker-2`. Capturas (sin commitear) en `03-evidencia/capturas/f2c-*.png`. Sin llamadas reales a Claude ni Cursor.
+
+### Limpieza de logs
+`git rm --cached` de `jeiger_backend.log` y `apps/jeiger-web/jeiger_frontend.log`, ambos en `.gitignore`. Revisión del `package-lock.json`: solo añade el workspace `apps/jeiger-web`, sus dependencias elevadas (`@eslint/eslintrc`, `import-fresh`, etc.) y npm quitó banderas `"peer": true`; efecto de tener el workspace, se conserva.
+
+### P-03 (respuestas, sin token en la salida)
+```
+GET /api/providers/status sin token      : HTTP 401
+GET /api/providers/status token erróneo  : HTTP 401
+GET /api/providers/status token correcto : HTTP 200 (claude-cli, cursor)
+WS /api/ws sin token / token erróneo     : rechazado (InvalidStatus)
+WS /api/ws token correcto (Origin localhost:5173): abierto, primer evento gateway.ready
+```
+
+### F2-09 backend caído / token inválido
+Backend detenido: la página muestra "No hay conexión con el backend de Hermes. Arráncalo con `hermes serve --port 9119 --skip-build` (pasos en apps/jeiger-web/README.md). Reintentando automáticamente.", el campo queda bloqueado. Al volver a levantar el backend (sin recargar) el aviso desaparece y el campo se habilita (backoff 1 s a 10 s). Con `VITE_HERMES_TOKEN` erróneo: "El backend rechazó el token de sesión ...". Captura `f2c-09-backend-caido-1440.png`.
+Diseño: antes de abrir el WebSocket se sondea `/api/providers/status` con el token en cabecera; así los fallos no dejan `ws://...?token=` en la consola del navegador (medido: tras el cambio, solo errores 502 sin token).
+
+### F2-10 proveedor sin sesión
+Respuesta simulada de `/api/providers/status` (Cursor `logged_in:false`): aviso "Esta cuenta no tiene sesión iniciada. Ejecuta `agent login` y vuelve a intentarlo.", campo y Enviar deshabilitados, sesión "Sin iniciar sesión" en el panel Sistema. Captura `f2c-10-sin-sesion-1280.png`.
+
+### F2-11 error de turno
+WebSocket simulado (`message.start` y luego evento `error`): durante el turno PENSANDO; después píldora EN REPOSO, orbe `aria-label` "en reposo", `role=alert` "Error: El CLI de claude terminó de forma inesperada (código 1). Puedes escribir de nuevo.", campo habilitado y un segundo envío pasa a PENSANDO. Test de invariante actualizado (`orbState.test.ts`): `turn.failed` deja `orb: idle` con `errorMessage`. Captura `f2c-11-error-turno-1920.png`. No hubo cambios de Python.
+
+### F2-14 accesibilidad (tabla)
+| Elemento | Semántica | Tamaño | Nota |
+|---|---|---|---|
+| Selector de cuenta | `button` con `aria-haspopup`, `aria-expanded`, `aria-controls`; lista `role=listbox`, opciones `button role=option aria-selected` | 200x44 | Esc lo cierra y devuelve el foco |
+| Voz (cabecera) / Ajustes | `button` con `aria-label`, deshabilitados (F3/sin spec) | 44x44 | |
+| Orbe | `svg role=img`, `aria-label` "Orbe de JEIGER, <estado>" | 360x360 | |
+| Píldora de estado | `role=status` | - | texto + color |
+| Hablar | `button` con `aria-label`, deshabilitado (F3) | 52x52 | |
+| Campo de mensaje | `input` con `aria-label`; marcador con contraste | 1070x48 | ya no oculta el foco |
+| Enviar | `button` con `aria-label` | 48x48 | |
+| Interrumpir | `button` con texto | 178x48 | |
+| Avisos de conexión/sesión/error | `role=alert` o `role=status` | - | |
+Teclado: Tab recorre selector, campo, Enviar (y vuelve); anillo de foco oro de 2 px en todos (`:focus-visible`); Enter envía; Esc interrumpe (global) o cierra el selector.
+Contraste sobre fondo `#0C0607` (script propio): texto 17,6; secundario 8,9 (8,5 sobre panel); aviso 8,9; rojo claro 7,3; rojo pálido 13,9; oro 12,4; oro claro 16,6. Todos > 4,5. Deshabilitados exentos. Cambios: etiqueta CUENTA de 9 a 11 px; `<main>` para el área de trabajo.
+
+### F2-15 responsive
+Sin `scrollWidth > clientWidth` en el documento ni en ningún elemento, y sin desbordes de alto, a 1280x720, 1440x900 y 1920x1080 (estado normal); además las 3 capturas con avisos (peor caso de altura): 1440 (F2-09), 1280 (F2-10), 1920 (F2-11), vistas una vez, sin cortes.
+
+### F2-16 arranque en frío
+Pasos en `apps/jeiger-web/README.md` (Python del entorno, token cargado por script sin mostrarlo). Reproducido con ambos procesos detenidos: backend y web escuchando a los 24 s; `GET /api/providers/status` 200 directo y por el proxy de Vite (5173).
+
+### R-02
+`git diff --stat main..HEAD -- web tui_gateway apps/desktop`: vacío. `hermes serve`: arranca (9119, 200). `apps/desktop`: `npm run dev:renderer` (vite 5174) responde 200 (Electron completo no lanzado). `hermes dashboard --skip-build`: "Refusing to start: this host is already served by ..." cuando hay un `serve` (diseño), y con el puerto libre falla por no existir `hermes_cli/web_dist` (`Web UI build failed`, `--skip-build ... no web dist found`); Observado.
+Efecto colateral: el intento de recuperación de build del dashboard reescribió `node_modules` del worktree (desaparecieron `node_modules/.bin` y `typescript`/`vitest`); el último `npm run check` completo (typecheck + 21 tests + eslint) fue verde ANTES de eso, con el código final salvo el reformateo de `lint:fix`. Falta un `npm install` en el worktree (requiere autorización) para volver a ejecutar `npm run check`.
+
+### Hallazgos
+- Un fallo del handshake WS hace que el navegador escriba `ws://...?token=` en consola; la sonda HTTP previa lo evita casi siempre, no en una caída justo entre sonda y socket. Los logs de `.playwright-mcp/` de esta y de anteriores tandas contienen el token (carpeta ignorada por git): conviene borrarla.
+- El WS se rechaza con estado HTTP (sin código 4401 visible), por eso el "token inválido" se detecta por el 401 de `/api/providers/status`.
+- `hermes dashboard` reconstruye y muta `node_modules` aunque se pase `--skip-build`.

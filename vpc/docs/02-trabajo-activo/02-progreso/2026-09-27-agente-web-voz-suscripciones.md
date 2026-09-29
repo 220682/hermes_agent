@@ -151,3 +151,12 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - Observado: F2-07 (falta captura UI de PENSANDO/RESPONDIENDO) y F2-13 (falta ver orbe a reposo tras Esc en UI). F1-03 reverificado.
 - Retomar: arrancar serve + `npm run dev`; para capturar estados, forzar `?orb=responding` (DEV) o usar un turno más lento; tests: `HERMES_PYTHON=<test-environment>/venv/Scripts/python.exe scripts/run_tests.sh ...`.
 - Hallazgo: `scripts/run_tests.sh` falla la activación en este worktree; con HERMES_PYTHON al test-environment funciona.
+
+
+### Handoff F2 tanda C (2026-09-29, Worker local-worker-2)
+- Conforme: F2-09, F2-10, F2-11, F2-14, F2-15, F2-16, P-03. Observado: R-02 (dashboard no arranca: sin `hermes_cli/web_dist`; serve y renderer desktop OK, diffs vacíos). F2-07 y F2-13 siguen Observados hasta F3.
+- Código: `191a2cdb14` (logs fuera del índice + .gitignore) y `0049687ca6` (reconexión con sonda HTTP, errores, a11y, README) en `local-worker-2`. Sin push.
+- Sin llamadas reales a Claude/Cursor; estados verificados con WS falso (`addInitScript`), estado de proveedores simulado y backend apagado de verdad.
+- PROBLEMA: `hermes dashboard --skip-build` intentó un build de recuperación y dejó `node_modules` del worktree sin `.bin`, `typescript` ni `vitest`. Antes de seguir: `npm install` en la raíz del worktree (necesita autorización) y `npm run check` en `apps/jeiger-web`.
+- Retomar: README de `apps/jeiger-web` (dos terminales PowerShell). Playwright MCP: `routeWebSocket` tumba el servidor, usar `addInitScript`.
+- Hallazgos: `.playwright-mcp/` contiene el token en logs antiguos (borrar); WS rechazado con HTTP sin código 4401; orbe `error` de `orb.css` queda solo para `?orb=error`.
