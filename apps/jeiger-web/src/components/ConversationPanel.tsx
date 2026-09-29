@@ -50,10 +50,10 @@ export function ConversationPanel({ state }: ConversationPanelProps) {
     }
   };
 
+  // F3-27: the panel owns the border and the "Ir al final" footer; only the messages scroll. The button lives
+  // in its own row below them, so it never covers the last message.
   return (
     <div
-      onScroll={handleScroll}
-      ref={scrollRef}
       style={{
         width: 380,
         minHeight: 0,
@@ -61,11 +61,22 @@ export function ConversationPanel({ state }: ConversationPanelProps) {
         flexShrink: 0,
         display: "flex",
         flexDirection: "column",
-        gap: 12,
-        padding: 16,
         background: "rgba(220,38,38,0.05)",
         border: "1px solid rgba(220,38,38,0.32)",
         borderRadius: 4,
+      }}
+    >
+    <div
+      data-testid="conversation-scroll"
+      onScroll={handleScroll}
+      ref={scrollRef}
+      style={{
+        flex: "1 1 0",
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        padding: 16,
         overflowY: "auto",
       }}
     >
@@ -141,26 +152,27 @@ export function ConversationPanel({ state }: ConversationPanelProps) {
         </div>
       )}
 
+    </div>
+
       {away && (
-        <button
-          onClick={jumpToEnd}
-          style={{
-            position: "sticky",
-            bottom: 0,
-            alignSelf: "center",
-            marginTop: "auto",
-            minHeight: 36,
-            padding: "0 14px",
-            color: "var(--jg-red-pale)",
-            fontSize: 13,
-            background: "rgba(12,6,7,0.92)",
-            border: "1px solid var(--jg-red-light)",
-            borderRadius: 999,
-          }}
-          type="button"
-        >
-          Ir al final
-        </button>
+        <div style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0, padding: "6px 12px 8px" }}>
+          <button
+            data-testid="jump-to-end"
+            onClick={jumpToEnd}
+            style={{
+              minHeight: 32,
+              padding: "0 14px",
+              color: "var(--jg-red-pale)",
+              fontSize: 13,
+              background: "rgba(12,6,7,0.92)",
+              border: "1px solid var(--jg-red-light)",
+              borderRadius: 999,
+            }}
+            type="button"
+          >
+            Ir al final
+          </button>
+        </div>
       )}
     </div>
   );

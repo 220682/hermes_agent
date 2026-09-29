@@ -845,7 +845,7 @@ export default function App() {
         issues={[...new Set<VoiceIssueCode | null>([voice.issue, speechIssue, loopRef.current.gaveUp ? "loop-gave-up" : null])].filter((code): code is VoiceIssueCode => code !== null)}
         levelRef={levelRef}
         loopOn={loopRef.current.loopOn}
-        loopPhase={loopPhase({ loopOn: loopRef.current.loopOn, micStatus: voice.status, orb: conversation.orb, speaking: speech.speaking })}
+        loopPhase={loopPhase({ loopOn: loopRef.current.loopOn, micStatus: voice.status, orb: conversation.orb, speaking: speech.speaking || speech.busy })}
         measuringNoise={measuringNoise}
         mode={voiceMode}
         onDeviceChange={voice.setDeviceId}
