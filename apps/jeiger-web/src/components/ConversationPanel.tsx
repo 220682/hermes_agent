@@ -26,7 +26,7 @@ export function ConversationPanel({ state }: ConversationPanelProps) {
         CONVERSACIÓN
       </div>
 
-      {state.transcript.length === 0 && state.orb === "idle" && (
+      {state.transcript.length === 0 && state.orb === "idle" && !state.errorMessage && (
         <div style={{ color: "var(--jg-text-secondary)", fontSize: 15 }}>
           Pulsa Espacio o escribe abajo para hablar con JEIGER. Enter envía, Esc interrumpe.
         </div>
@@ -77,7 +77,7 @@ export function ConversationPanel({ state }: ConversationPanelProps) {
         </div>
       )}
 
-      {state.orb === "error" && state.errorMessage && (
+      {state.errorMessage && (
         <div
           role="alert"
           style={{
@@ -89,7 +89,8 @@ export function ConversationPanel({ state }: ConversationPanelProps) {
             color: "var(--jg-warn)",
           }}
         >
-          {state.errorMessage}
+          <strong>Error: </strong>
+          {state.errorMessage} Puedes escribir de nuevo.
         </div>
       )}
     </div>

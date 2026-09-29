@@ -49,7 +49,7 @@ describe("reduceConversation", () => {
     expect(interrupted.transcript).toEqual([{ role: "user", text: "hola" }]);
   });
 
-  it("moves to error and clears the draft on turn.failed, without touching the transcript", () => {
+  it("returns to idle with the error message and clears the draft on turn.failed, without touching the transcript", () => {
     const responding: ConversationState = {
       ...initialConversationState,
       orb: "responding",
@@ -58,7 +58,7 @@ describe("reduceConversation", () => {
 
     const failed = reduceConversation(responding, { type: "turn.failed", message: "se cortó el CLI" });
 
-    expect(failed.orb).toBe("error");
+    expect(failed.orb).toBe("idle");
     expect(failed.draftAssistantText).toBe("");
     expect(failed.errorMessage).toBe("se cortó el CLI");
     expect(failed.transcript).toEqual(responding.transcript);
@@ -78,7 +78,7 @@ describe("reduceConversation", () => {
   });
 
   it("a fresh submit clears any leftover error state", () => {
-    const errored: ConversationState = { ...initialConversationState, orb: "error", errorMessage: "boom" };
+    const errored: ConversationState = { ...initialConversationState, orb: "idle", errorMessage: "boom" };
     const next = reduceConversation(errored, { type: "submit", text: "otra vez" });
 
     expect(next.orb).toBe("thinking");

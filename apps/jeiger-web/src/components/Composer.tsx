@@ -63,7 +63,6 @@ export function Composer({ disabled, interruptEnabled, onSubmit, onInterrupt }: 
           background: "rgba(220,38,38,0.06)",
           border: "1px solid rgba(220,38,38,0.4)",
           borderRadius: 10,
-          outline: "none",
           fontSize: 16,
         }}
         type="text"

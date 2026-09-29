@@ -6,10 +6,11 @@ import { ConversationPanel } from "@/components/ConversationPanel";
 import { HeaderButtons } from "@/components/HeaderButtons";
 import { Orb } from "@/components/Orb";
 import { SystemPanel } from "@/components/SystemPanel";
+import { classifyConnectFailure, type ConnectIssue, connectIssueMessage, reconnectDelayMs } from "@/connectionIssue";
 import { gatewayEventToConversationEvent, type RawGatewayEvent } from "@/conversation/gatewayEvents";
 import { initialConversationState, type OrbState, reduceConversation } from "@/conversation/orbState";
 import { createGatewayClient, createSession, gatewayWsUrl, interruptSession, type ProviderId, submitPrompt } from "@/gateway";
-import { fetchProvidersStatus, type ProvidersStatus } from "@/providersApi";
+import { fetchProvidersStatus, type ProvidersStatus, ProvidersStatusError } from "@/providersApi";
 
 const ORB_PILL: Record<string, { label: string; color: string }> = {
   idle: { label: "EN REPOSO", color: "var(--jg-crimson)" },
@@ -27,6 +28,8 @@ export default function App() {
   const [connection, setConnection] = useState<BackendConnection>("connecting");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [connectIssue, setConnectIssue] = useState<ConnectIssue>("backend-down");
+  const [tokenRejected, setTokenRejected] = useState(false);
 
   const clientRef = useRef(createGatewayClient());
   const sessionIdRef = useRef<string | null>(null);
@@ -80,15 +83,58 @@ export default function App() {
       }
     });
 
+    // Automatic reconnect (F2-09): the shared client never redials by itself. One timer at most.
+    let disposed = false;
+    let attempt = 0;
+    let retryTimer: number | undefined;
+
+    const scheduleRetry = () => {
+      if (disposed || retryTimer !== undefined) {
+        return;
+      }
+
+      retryTimer = window.setTimeout(() => {
+        retryTimer = undefined;
+        tryConnect();
+      }, reconnectDelayMs(attempt++));
+    };
+
+    // Probe over HTTP first (token in a header): a failed WebSocket handshake makes the browser
+    // log the ws:// URL, and that URL carries ?token=, which we cannot mask. So the socket is only
+    // dialled once the backend answers and accepts the token; a 401 is the "bad token" verdict.
+    const tryConnect = () => {
+      fetchProvidersStatus()
+        .then(() => client.connect(gatewayWsUrl()))
+        .then(() => {
+          attempt = 0;
+        })
+        .catch((error: unknown) => {
+          // Only the failure CLASS is kept: the message never contains the URL (token).
+          const badToken = error instanceof ProvidersStatusError && error.status === 401;
+
+          setConnectIssue(badToken ? "bad-token" : classifyConnectFailure(error instanceof Error ? error.message : ""));
+          setConnection("error");
+          scheduleRetry();
+        });
+    };
+
+    const offRetry = client.onState((state) => {
+      if (state === "closed") {
+        setConnectIssue("backend-down");
+        scheduleRetry();
+      }
+    });
+
     // Deferred one tick: React StrictMode mounts, unmounts and remounts in dev, and a socket
     // aborted mid-handshake makes the BROWSER log "WebSocket connection to ...?token=..."
     // to the console, a line we cannot mask.
-    const connectTimer = window.setTimeout(() => {
-      client.connect(gatewayWsUrl()).catch(() => setConnection("error"));
-    }, 0);
+    const connectTimer = window.setTimeout(tryConnect, 0);
 
     return () => {
+      disposed = true;
       window.clearTimeout(connectTimer);
+      window.clearTimeout(retryTimer);
+      offRetry();
       offState();
       offEvent();
       client.close();
@@ -98,8 +144,14 @@ export default function App() {
   // Provider account status for the selector (F2-06/F2-10).
   const refreshProvidersStatus = useCallback(() => {
     fetchProvidersStatus()
-      .then(setProvidersStatus)
-      .catch(() => setProvidersStatus(null));
+      .then((status) => {
+        setTokenRejected(false);
+        setProvidersStatus(status);
+      })
+      .catch((error: unknown) => {
+        setTokenRejected(error instanceof ProvidersStatusError && error.status === 401);
+        setProvidersStatus(null);
+      });
   }, []);
 
   useEffect(() => {
@@ -234,7 +286,7 @@ export default function App() {
           }}
         >
           <span style={{ width: 8, height: 8, borderRadius: "50%", background: pill.color, boxShadow: `0 0 8px ${pill.color}` }} />
-          <span style={{ fontFamily: "var(--jg-font-display)", fontSize: 12, letterSpacing: "0.22em", color: pill.color }}>
+          <span role="status" style={{ fontFamily: "var(--jg-font-display)", fontSize: 12, letterSpacing: "0.22em", color: pill.color }}>
             {pill.label}
           </span>
         </div>
@@ -245,9 +297,9 @@ export default function App() {
         </div>
       </header>
 
-      {connection !== "open" && (
+      {(connection !== "open" || tokenRejected) && (
         <div
-          role="status"
+          role={connection === "connecting" ? "status" : "alert"}
           style={{
             padding: "10px 16px",
             background: "rgba(251,146,60,0.08)",
@@ -258,9 +310,9 @@ export default function App() {
           }}
         >
           {connection === "connecting" && "Conectando con el backend de Hermes…"}
-          {connection === "closed" && "Se perdió la conexión con el backend. Reconectando…"}
-          {connection === "error" &&
-            "No se pudo conectar con hermes serve. Arráncalo con el comando de vpc/docs/05-diseno-y-referencias/design.md y recarga la página."}
+          {(connection === "closed" || connection === "error") &&
+            connectIssueMessage(tokenRejected ? "bad-token" : connectIssue)}
+          {connection === "open" && tokenRejected && connectIssueMessage("bad-token")}
         </div>
       )}
 
@@ -298,7 +350,7 @@ export default function App() {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: 0 }}>
+      <main style={{ display: "flex", gap: 20, flexGrow: 1, minHeight: 0 }}>
         <SystemPanel provider={provider} providerStatus={currentProviderStatus} />
 
         <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
@@ -309,7 +361,7 @@ export default function App() {
         </div>
 
         <ConversationPanel state={conversation} />
-      </div>
+      </main>
 
       <Composer disabled={composerDisabled} interruptEnabled={interruptEnabled} onInterrupt={handleInterrupt} onSubmit={handleSubmit} />
     </div>

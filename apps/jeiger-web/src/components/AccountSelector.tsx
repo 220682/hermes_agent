@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 
 import type { ProviderId } from "@/gateway";
 import type { ProvidersStatus } from "@/providersApi";
@@ -19,6 +19,7 @@ export interface AccountSelectorProps {
 export function AccountSelector({ status, selected, onSelect }: AccountSelectorProps) {
   const [open, setOpen] = useState(false);
   const listboxId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const selectedStatus = status?.[selected];
 
   const acctLabel = selectedStatus?.logged_in
@@ -26,12 +27,22 @@ export function AccountSelector({ status, selected, onSelect }: AccountSelectorP
     : PROVIDER_LABEL[selected];
 
   return (
-    <div style={{ position: "relative" }}>
+    <div
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && open) {
+          e.stopPropagation();
+          setOpen(false);
+          triggerRef.current?.focus();
+        }
+      }}
+      style={{ position: "relative" }}
+    >
       <button
         aria-controls={listboxId}
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => setOpen((v) => !v)}
+        ref={triggerRef}
         style={{
           display: "flex",
           alignItems: "center",
@@ -47,7 +58,7 @@ export function AccountSelector({ status, selected, onSelect }: AccountSelectorP
         type="button"
       >
         <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
-          <span style={{ fontFamily: "var(--jg-font-display)", fontSize: 9, letterSpacing: "0.22em", color: "var(--jg-text-secondary)" }}>
+          <span style={{ fontFamily: "var(--jg-font-display)", fontSize: 11, letterSpacing: "0.22em", color: "var(--jg-text-secondary)" }}>
             CUENTA
           </span>
           <span style={{ fontWeight: 700, fontSize: 16 }}>{acctLabel}</span>

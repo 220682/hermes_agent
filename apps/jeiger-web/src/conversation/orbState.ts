@@ -76,7 +76,9 @@ export function reduceConversation(state: ConversationState, event: Conversation
     }
 
     case "turn.failed":
-      return { ...state, orb: "error", draftAssistantText: "", errorMessage: event.message };
+      // F2-11: a failed turn leaves the orb at rest and the app usable; the error is
+      // shown in the conversation (errorMessage), not as a stuck orb state.
+      return { ...state, orb: "idle", draftAssistantText: "", errorMessage: event.message };
 
     case "interrupt":
       return { ...state, orb: "idle", draftAssistantText: "" };

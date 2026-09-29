@@ -14,13 +14,19 @@ export interface ProviderStatus {
 
 export type ProvidersStatus = Record<ProviderId, ProviderStatus>;
 
+export class ProvidersStatusError extends Error {
+  constructor(readonly status: number) {
+    super(`GET /api/providers/status -> ${status}`);
+  }
+}
+
 export async function fetchProvidersStatus(): Promise<ProvidersStatus> {
   const response = await fetch("/api/providers/status", {
     headers: { "X-Hermes-Session-Token": HERMES_TOKEN },
   });
 
   if (!response.ok) {
-    throw new Error(`GET /api/providers/status -> ${response.status}`);
+    throw new ProvidersStatusError(response.status);
   }
 
   return (await response.json()) as ProvidersStatus;
