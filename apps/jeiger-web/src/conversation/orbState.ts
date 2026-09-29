@@ -55,6 +55,12 @@ export function reduceConversation(state: ConversationState, event: Conversation
       return state.orb === "thinking" ? state : { ...state, orb: "thinking", draftAssistantText: "" };
 
     case "turn.delta":
+      // A late chunk after an interrupt (orb already back to idle) must not
+      // wake the orb again.
+      if (state.orb === "idle") {
+        return state;
+      }
+
       return {
         ...state,
         orb: "responding",

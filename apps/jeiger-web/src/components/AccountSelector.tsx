@@ -106,7 +106,7 @@ export function AccountSelector({ status, selected, onSelect }: AccountSelectorP
                 <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.15 }}>
                   <span style={{ fontWeight: 700, fontSize: 17 }}>{PROVIDER_LABEL[id]}</span>
                   <span style={{ fontSize: 13, color: s?.logged_in ? "var(--jg-text-secondary)" : "var(--jg-warn)" }}>
-                    {s ? s.detail : "cargando…"}
+                    {s ? (s.logged_in ? s.detail : s.available ? "falta iniciar sesión" : "falta iniciar sesión · CLI no encontrado") : "cargando…"}
                   </span>
                 </span>
                 <span

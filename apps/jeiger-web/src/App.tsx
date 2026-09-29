@@ -26,6 +26,7 @@ export default function App() {
   const [providersStatus, setProvidersStatus] = useState<ProvidersStatus | null>(null);
   const [connection, setConnection] = useState<BackendConnection>("connecting");
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const clientRef = useRef(createGatewayClient());
   const sessionIdRef = useRef<string | null>(null);
@@ -79,9 +80,15 @@ export default function App() {
       }
     });
 
-    client.connect(gatewayWsUrl()).catch(() => setConnection("error"));
+    // Deferred one tick: React StrictMode mounts, unmounts and remounts in dev, and a socket
+    // aborted mid-handshake makes the BROWSER log "WebSocket connection to ...?token=..."
+    // to the console, a line we cannot mask.
+    const connectTimer = window.setTimeout(() => {
+      client.connect(gatewayWsUrl()).catch(() => setConnection("error"));
+    }, 0);
 
     return () => {
+      window.clearTimeout(connectTimer);
       offState();
       offEvent();
       client.close();
@@ -129,12 +136,19 @@ export default function App() {
 
     // A new account is a new session (design.md / F2-08): never carry the old
     // provider's context into it, and never touch the previous session.
+    setNotice(
+      sessionIdRef.current
+        ? `Cambiaste de cuenta: la próxima pregunta abre una sesión nueva con ${next === "cursor" ? "Cursor" : "Claude"}. La conversación anterior sigue intacta en su cuenta.`
+        : null,
+    );
+
     setProvider(next);
     setSessionId(null);
     dispatch({ type: "reset" });
   };
 
   const handleSubmit = async (text: string) => {
+    setNotice(null);
     dispatch({ type: "submit", text });
     const sid = (await ensureSession()) ?? sessionIdRef.current;
 
@@ -158,6 +172,24 @@ export default function App() {
       void interruptSession(clientRef.current, sid);
     }
   };
+
+  const handleInterruptRef = useRef(handleInterrupt);
+
+  handleInterruptRef.current = handleInterrupt;
+
+  // Esc interrupts from anywhere: the text field is disabled during a turn, so it
+  // cannot own the key.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && (orbRef.current === "thinking" || orbRef.current === "responding")) {
+        handleInterruptRef.current();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // Dev-only preview of the orb states without a backend: /?orb=thinking
   const forcedOrb = import.meta.env.DEV ? new URLSearchParams(window.location.search).get("orb") : null;
@@ -229,6 +261,22 @@ export default function App() {
           {connection === "closed" && "Se perdió la conexión con el backend. Reconectando…"}
           {connection === "error" &&
             "No se pudo conectar con hermes serve. Arráncalo con el comando de vpc/docs/05-diseno-y-referencias/design.md y recarga la página."}
+        </div>
+      )}
+
+      {notice && (
+        <div
+          role="status"
+          style={{
+            padding: "10px 16px",
+            background: "rgba(251,146,60,0.08)",
+            border: "1px solid var(--jg-warn)",
+            borderRadius: 8,
+            color: "var(--jg-warn)",
+            fontSize: 14,
+          }}
+        >
+          {notice}
         </div>
       )}
 

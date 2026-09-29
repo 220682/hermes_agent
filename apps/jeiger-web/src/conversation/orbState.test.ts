@@ -84,4 +84,13 @@ describe("reduceConversation", () => {
     expect(next.orb).toBe("thinking");
     expect(next.errorMessage).toBeNull();
   });
+
+  it("a late delta after an interrupt does not wake the orb", () => {
+    const thinking = reduceConversation(initialConversationState, { type: "submit", text: "hola" });
+    const interrupted = reduceConversation(thinking, { type: "interrupt" });
+    const late = reduceConversation(interrupted, { type: "turn.delta", text: "tarde" });
+
+    expect(late.orb).toBe("idle");
+    expect(late.draftAssistantText).toBe("");
+  });
 });

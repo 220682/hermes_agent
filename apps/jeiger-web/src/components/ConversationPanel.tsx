@@ -28,7 +28,7 @@ export function ConversationPanel({ state }: ConversationPanelProps) {
 
       {state.transcript.length === 0 && state.orb === "idle" && (
         <div style={{ color: "var(--jg-text-secondary)", fontSize: 15 }}>
-          Escribe abajo para hablar con JEIGER. Pulsa Enter para enviar, Esc para interrumpir.
+          Pulsa Espacio o escribe abajo para hablar con JEIGER. Enter envía, Esc interrumpe.
         </div>
       )}
 

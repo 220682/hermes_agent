@@ -53,8 +53,6 @@ export function Composer({ disabled, interruptEnabled, onSubmit, onInterrupt }: 
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             submit();
-          } else if (e.key === "Escape" && interruptEnabled) {
-            onInterrupt();
           }
         }}
         placeholder="Escribe tu mensaje…"
