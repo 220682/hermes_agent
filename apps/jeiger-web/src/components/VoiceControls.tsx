@@ -6,6 +6,11 @@ import type { VoiceStatus } from "@/voice/useVoiceInput";
 import { type VoiceIssueCode, voiceIssueMessage } from "@/voice/voiceIssues";
 import { MIC_LABEL } from "@/voice/voiceLabels";
 
+const PRIVACY_SHORT: Record<SttEngine, string> = {
+  "web-speech": "Audio: servicio del navegador",
+  local: "Audio: solo en este equipo",
+};
+
 export interface MicButtonProps {
   status: VoiceStatus;
   disabled: boolean;
@@ -80,44 +85,40 @@ export function VoiceStrip({
 }: VoiceStripProps) {
   const busy = status !== "idle";
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {issues.map((issue) => (
-        <div
-          key={issue}
-          role="alert"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "8px 14px",
-            background: "rgba(251,146,60,0.08)",
-            border: "1px solid var(--jg-warn)",
-            borderRadius: 8,
-            color: "var(--jg-warn)",
-            fontSize: 14,
-          }}
-        >
-          <span style={{ flexGrow: 1 }}>{voiceIssueMessage(issue)}</span>
-          {offersLocalSwitch(issue, engine) && (
-            <button
-              onClick={() => onPreferenceChange("local")}
-              style={{ flexShrink: 0, padding: "6px 10px", color: "var(--jg-text)", border: "1px solid var(--jg-warn)", borderRadius: 6, background: "transparent" }}
-              type="button"
-            >
-              Cambiar a reconocimiento local
-            </button>
-          )}
-        </div>
-      ))}
+  const selectStyle = {
+    background: "var(--jg-surface)",
+    color: "var(--jg-text)",
+    border: "1px solid rgba(220,38,38,0.4)",
+    borderRadius: 6,
+    padding: "2px 6px",
+    fontSize: 12,
+  } as const;
 
-      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--jg-text-secondary)" }}>
+  const browserMicNote = showsMicSelector(preference, engine)
+    ? undefined
+    : "El reconocimiento del navegador usa el micrófono predeterminado de Windows; el selector de micrófono solo aparece en modo local.";
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        height: 34,
+        flexShrink: 0,
+        overflow: "hidden",
+        fontSize: 12,
+        color: "var(--jg-text-secondary)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <label style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }} title={browserMicNote}>
         <span>Reconocimiento</span>
         <select
           aria-label="Reconocimiento"
           disabled={busy}
           onChange={(e) => onPreferenceChange(e.target.value === "local" ? "local" : "auto")}
-          style={{ background: "var(--jg-surface)", color: "var(--jg-text)", border: "1px solid rgba(220,38,38,0.4)", borderRadius: 6, padding: "4px 6px" }}
+          style={selectStyle}
           value={preference}
         >
           <option disabled={!webSpeechAvailable} value="auto">
@@ -127,53 +128,78 @@ export function VoiceStrip({
         </select>
       </label>
 
-      {!showsMicSelector(preference, engine) && (
-        <div style={{ fontSize: 12, color: "var(--jg-text-secondary)" }}>
-          El reconocimiento del navegador usa el micrófono predeterminado de Windows; el selector de micrófono solo aparece en modo local.
-        </div>
+      {devices.length > 0 && showsMicSelector(preference, engine) && (
+        <label style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 1, minWidth: 0 }}>
+          <span>Micrófono</span>
+          <select
+            aria-label="Micrófono"
+            disabled={busy}
+            onChange={(e) => onDeviceChange(e.target.value)}
+            style={{ ...selectStyle, maxWidth: 200, minWidth: 0 }}
+            value={devices.some((d) => d.deviceId === deviceId) ? deviceId : ""}
+          >
+            <option value="">Predeterminado de Windows</option>
+            {devices.map((d) => (
+              <option key={d.deviceId} value={d.deviceId}>
+                {d.label}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: "var(--jg-text-secondary)" }}>
-        <div
-          aria-hidden="true"
-          style={{ width: 120, height: 6, borderRadius: 3, background: "rgba(220,38,38,0.15)", overflow: "hidden", flexShrink: 0 }}
-        >
-          <div
-            ref={levelRef}
-            style={{ width: "100%", height: "100%", background: "var(--jg-red-light)", transform: "scaleX(0)", transformOrigin: "left" }}
-          />
-        </div>
-
-        <span aria-live="polite" role="status" style={{ flexGrow: 1, minWidth: 0, color: partial ? "var(--jg-text)" : undefined }}>
-          {status === "listening" ? partial || "Te escucho…" : status === "idle" ? "" : MIC_LABEL[status]}
+      {engine && (
+        <span data-testid="privacy-notice" style={{ flexShrink: 0 }} title={PRIVACY_NOTICE[engine]}>
+          {PRIVACY_SHORT[engine]}
         </span>
+      )}
 
-        {devices.length > 0 && showsMicSelector(preference, engine) && (
-          <label style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            <span>Micrófono</span>
-            <select
-              aria-label="Micrófono"
-              disabled={busy}
-              onChange={(e) => onDeviceChange(e.target.value)}
-              style={{ maxWidth: 220, background: "var(--jg-surface)", color: "var(--jg-text)", border: "1px solid rgba(220,38,38,0.4)", borderRadius: 6, padding: "4px 6px" }}
-              value={devices.some((d) => d.deviceId === deviceId) ? deviceId : ""}
-            >
-              <option value="">Predeterminado de Windows</option>
-              {devices.map((d) => (
-                <option key={d.deviceId} value={d.deviceId}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+      <div aria-hidden="true" style={{ width: 80, height: 6, borderRadius: 3, background: "rgba(220,38,38,0.15)", overflow: "hidden", flexShrink: 0 }}>
+        <div
+          ref={levelRef}
+          style={{ width: "100%", height: "100%", background: "var(--jg-red-light)", transform: "scaleX(0)", transformOrigin: "left" }}
+        />
       </div>
 
-            {engine && (
-        <div data-testid="privacy-notice" style={{ fontSize: 12, color: "var(--jg-text-secondary)" }}>
-          {PRIVACY_NOTICE[engine]}
+      <span
+        aria-live="polite"
+        role="status"
+        style={{ flex: "1 1 0", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", color: partial ? "var(--jg-text)" : undefined }}
+      >
+        {status === "listening" ? partial || "Te escucho…" : status === "idle" ? "" : MIC_LABEL[status]}
+      </span>
+
+      {issues.map((issue) => (
+        <div
+          key={issue}
+          role="alert"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            flex: "1 1 0",
+            minWidth: 0,
+            padding: "3px 10px",
+            background: "rgba(251,146,60,0.08)",
+            border: "1px solid var(--jg-warn)",
+            borderRadius: 8,
+            color: "var(--jg-warn)",
+          }}
+        >
+          <span style={{ flexGrow: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }} title={voiceIssueMessage(issue)}>
+            {voiceIssueMessage(issue)}
+          </span>
+          {offersLocalSwitch(issue, engine) && (
+            <button
+              onClick={() => onPreferenceChange("local")}
+              style={{ flexShrink: 0, padding: "2px 8px", fontSize: 12, color: "var(--jg-text)", border: "1px solid var(--jg-warn)", borderRadius: 6, background: "transparent" }}
+              type="button"
+            >
+              Cambiar a reconocimiento local
+            </button>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 }

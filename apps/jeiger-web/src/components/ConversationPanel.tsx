@@ -11,6 +11,8 @@ export function ConversationPanel({ state }: ConversationPanelProps) {
     <div
       style={{
         width: 380,
+        minHeight: 0,
+        boxSizing: "border-box",
         flexShrink: 0,
         display: "flex",
         flexDirection: "column",

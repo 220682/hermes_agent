@@ -28,17 +28,18 @@ const STT_LABEL: Record<SttEngine, string> = {
 const ms = (v: number | null) => (v === null ? "sin medir" : `${v} ms`);
 
 const panelStyle: CSSProperties = {
-  padding: "16px 18px",
+  padding: "10px 14px",
   background: "rgba(220,38,38,0.05)",
   border: "1px solid rgba(220,38,38,0.32)",
   borderRadius: 4,
   display: "flex",
   flexDirection: "column",
-  gap: 12,
+  gap: 7,
+  flexShrink: 0,
 };
 
 const labelStyle: CSSProperties = {
-  fontSize: 13,
+  fontSize: 12,
   letterSpacing: "0.12em",
   color: "var(--jg-text-secondary)",
 };
@@ -49,18 +50,18 @@ export function SystemPanel({ provider, providerStatus, sttEngine, voiceConfig, 
   const paidTts = voiceConfig !== null && isPaidVoiceProvider(voiceConfig.tts);
 
   return (
-    <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ width: 300, flexShrink: 0, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={panelStyle}>
         <div style={{ fontFamily: "var(--jg-font-display)", fontSize: 11, letterSpacing: "0.26em", color: "var(--jg-red-light)" }}>
           SISTEMA
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={labelStyle}>CEREBRO</span>
-          <span style={{ fontWeight: 600, fontSize: 17 }}>{BRAIN_LABEL[provider]}</span>
+          <span style={{ fontWeight: 600, fontSize: 15 }}>{BRAIN_LABEL[provider]}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={labelStyle}>SESIÓN</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 17 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 15 }}>
             <span
               aria-hidden="true"
               style={{
@@ -76,11 +77,11 @@ export function SystemPanel({ provider, providerStatus, sttEngine, voiceConfig, 
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={labelStyle}>OÍDO (STT)</span>
-          <span style={{ fontWeight: 600, fontSize: 17 }}>{sttEngine ? STT_LABEL[sttEngine] : "No disponible en este navegador"}</span>
+          <span style={{ fontWeight: 600, fontSize: 15 }}>{sttEngine ? STT_LABEL[sttEngine] : "No disponible en este navegador"}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={labelStyle}>VOZ (TTS)</span>
-          <span style={{ fontWeight: 600, fontSize: 17 }}>
+          <span style={{ fontWeight: 600, fontSize: 15 }}>
             {speakReplies ? "Activada" : "Desactivada"} · {voiceConfig ? `${voiceConfig.tts} (servidor)` : "consultando…"}
           </span>
           {paidTts && (
@@ -91,7 +92,7 @@ export function SystemPanel({ provider, providerStatus, sttEngine, voiceConfig, 
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={labelStyle}>LATENCIAS (MEDIDAS)</span>
-          <span data-testid="latencies" style={{ fontFamily: "var(--jg-font-mono)", fontSize: 12, lineHeight: 1.5 }}>
+          <span data-testid="latencies" style={{ fontFamily: "var(--jg-font-mono)", fontSize: 12, lineHeight: 1.4 }}>
             STT {ms(latencies.sttMs)}
             <br />
             TTS primer audio {ms(latencies.ttsFirstAudioMs)}
@@ -105,15 +106,15 @@ export function SystemPanel({ provider, providerStatus, sttEngine, voiceConfig, 
         <div style={{ fontFamily: "var(--jg-font-display)", fontSize: 11, letterSpacing: "0.26em", color: "var(--jg-gold)" }}>
           ATAJOS
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
           <span style={labelStyle}>Enviar</span>
           <span style={{ fontFamily: "var(--jg-font-mono)", color: "var(--jg-gold-light)" }}>Enter</span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
           <span style={labelStyle}>Interrumpir</span>
           <span style={{ fontFamily: "var(--jg-font-mono)", color: "var(--jg-gold-light)" }}>Esc</span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
           <span style={labelStyle}>Hablar / cortar</span>
           <span style={{ fontFamily: "var(--jg-font-mono)", color: "var(--jg-gold-light)" }}>Espacio</span>
         </div>

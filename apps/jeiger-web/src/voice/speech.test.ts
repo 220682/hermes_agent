@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConversationEvent } from "@/conversation/orbState";
 
 import { barScalesFromLevel, barScalesFromSpectrum, createOrbAudioDriver } from "./orbAudio";
-import { SentenceChunker, stripMarkdownForSpeech } from "./sentenceChunker";
+import { SentenceChunker } from "./sentenceChunker";
 import { decideSpaceAction, type SpaceContext } from "./spaceKey";
 import { dataUrlToBytes, fetchVoiceConfig, isPaidVoiceProvider, SpeakError, type SpeechClip, synthesizeSentence } from "./speakApi";
 import { type AudioBackend, type TtsMetrics, TtsPlayer } from "./ttsPlayer";
@@ -38,12 +38,6 @@ describe("sentence cutting (F3-05)", () => {
     expect(c.feed(" mucho</think>Respuesta lista. ")).toEqual(["Respuesta lista. "]);
     c.feed("Texto <think>sin cerrar");
     expect(c.flush()).toEqual(["Texto"]);
-  });
-
-  it("strips markdown a voice would read as symbols", () => {
-    expect(stripMarkdownForSpeech("## Título\n- **negrita** y `code` [enlace](http://x.y)\n```js\nfoo()\n```")).toBe(
-      "Título negrita y code enlace",
-    );
   });
 });
 

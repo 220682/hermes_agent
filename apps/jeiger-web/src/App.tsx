@@ -396,14 +396,15 @@ export default function App() {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 16,
-        height: "100vh",
-        overflowY: "auto",
-        padding: "20px 28px 24px",
+        gap: 10,
+        height: "100dvh",
+        overflow: "hidden",
+        boxSizing: "border-box",
+        padding: "12px 24px 14px",
         background: "radial-gradient(ellipse at 50% 46%, rgba(220,38,38,0.15), rgba(12,6,7,0) 62%), var(--jg-bg)",
       }}
     >
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 48 }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 40, flexShrink: 0 }}>
         <div style={{ fontFamily: "var(--jg-font-display)", fontWeight: 700, fontSize: 20, letterSpacing: "0.34em" }}>
           JEIGER
         </div>
@@ -484,12 +485,12 @@ export default function App() {
         </div>
       )}
 
-      <main style={{ display: "flex", gap: 20, flex: "1 1 0", minHeight: 640 }}>
+      <main style={{ display: "flex", gap: 20, flex: "1 1 0", minHeight: 0 }}>
         <SystemPanel provider={provider} providerStatus={currentProviderStatus} speakReplies={speech.enabled} sttEngine={voice.engine} voiceConfig={voiceConfig} />
 
-        <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
+        <div style={{ flexGrow: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <Orb driverRef={orbDriverRef} state={speakingOrb} />
-          <div style={{ fontFamily: "var(--jg-font-display)", fontWeight: 600, fontSize: 18, letterSpacing: "0.4em", color: pill.color }}>
+          <div style={{ fontFamily: "var(--jg-font-display)", fontWeight: 600, fontSize: 18, letterSpacing: "0.4em", color: pill.color, flexShrink: 0 }}>
             {pill.label}
           </div>
         </div>

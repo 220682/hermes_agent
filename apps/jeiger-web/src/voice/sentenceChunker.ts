@@ -1,23 +1,92 @@
 /** F3-05: cuts streamed reply text into speakable sentences, like the server's
- * `tools/tts_streaming.SentenceChunker` (boundary after .!? plus whitespace, or a blank line;
- * short fragments merge into the next sentence) so the first audio can start before the reply ends. */
+ * `tools/tts_streaming.SentenceChunker` so the first audio can start before the reply ends.
+ * A boundary is sentence punctuation plus whitespace, or a line break; it is NOT one inside a fenced
+ * code block, inside a table, after an abbreviation ("Sr."), an initial, or a number that continues
+ * the sentence ("el 3. de mayo") or numbers a list item. Short fragments merge into the next one. */
 
-const BOUNDARY = /(?<=[.!?])\s|\n\n/g;
 const THINK_BLOCK = /<(think|thinking|reasoning)[\s>][\s\S]*?<\/\1>/gi;
 const THINK_OPEN = /<(think|thinking|reasoning)[\s>]/i;
 
-/** Drops markdown that a voice would read aloud as symbols. */
-export function stripMarkdownForSpeech(text: string): string {
-  return text
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`([^`]*)`/g, "$1")
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
-    .replace(/^\s*[-*+]\s+/gm, "")
-    .replace(/[*_~]{1,3}/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+const ABBREVIATIONS = new Set([
+  "sr", "sra", "srta", "sres", "dr", "dra", "prof", "profa", "ud", "uds", "vs", "ej", "pág", "págs", "núm",
+  "av", "ing", "lic", "mr", "mrs", "ms", "st", "jr", "fig", "tel", "aprox", "art", "cap", "vol", "gral", "sta",
+]);
+
+/** Ends (exclusive) of every complete sentence in `buf`; stops early where more text is needed to decide. */
+function boundaryEnds(buf: string): number[] {
+  const ends: number[] = [];
+  let inFence = false;
+  let lineStart = 0;
+
+  for (let i = 0; i < buf.length; i++) {
+    if (buf.startsWith("```", i) || buf.startsWith("~~~", i)) {
+      inFence = !inFence;
+      i += 2;
+
+      continue;
+    }
+
+    if (inFence) {
+      continue;
+    }
+
+    const ch = buf[i];
+    const inTable = /^\s*\|/.test(buf.slice(lineStart, i + 1));
+
+    if (ch === "\n") {
+      if (inTable) {
+        const next = buf.slice(i + 1).match(/^\s*(\S)/);
+
+        if (!next) {
+          return ends; // the table may continue
+        }
+
+        if (next[1] === "|") {
+          lineStart = i + 1;
+
+          continue;
+        }
+      }
+
+      ends.push(i + 1);
+      lineStart = i + 1;
+
+      continue;
+    }
+
+    if (inTable || (ch !== "." && ch !== "!" && ch !== "?") || i + 1 >= buf.length || !/\s/.test(buf[i + 1])) {
+      continue;
+    }
+
+    if (ch === ".") {
+      const word = /([\p{L}\p{N}]+)$/u.exec(buf.slice(Math.max(lineStart, i - 12), i))?.[1];
+
+      if (word && (ABBREVIATIONS.has(word.toLowerCase()) || (word.length === 1 && /\p{Lu}/u.test(word)))) {
+        continue;
+      }
+
+      if (word && /^\d+$/.test(word)) {
+        const listNumber = buf.slice(lineStart, i - word.length).trim() === "";
+        const after = /\S/.exec(buf.slice(i + 1));
+
+        if (listNumber) {
+          continue;
+        }
+
+        if (!after) {
+          return ends;
+        }
+
+        if (/[\p{Ll}\p{N}]/u.test(after[0])) {
+          continue;
+        }
+      }
+    }
+
+    ends.push(i + 2);
+  }
+
+  return ends;
 }
 
 export class SentenceChunker {
@@ -36,30 +105,20 @@ export class SentenceChunker {
     }
 
     const out: string[] = [];
-    let from = 0;
+    let last = 0;
 
-    for (;;) {
-      BOUNDARY.lastIndex = from;
-
-      const m = BOUNDARY.exec(this.buf);
-
-      if (!m) {
-        return out;
-      }
-
-      const end = m.index + m[0].length;
-      const head = this.buf.slice(0, end);
-
-      if (head.trim().length < this.minLen) {
-        from = end;
-
+    for (const end of boundaryEnds(this.buf)) {
+      if (this.buf.slice(last, end).trim().length < this.minLen) {
         continue;
       }
 
-      out.push(head);
-      this.buf = this.buf.slice(end);
-      from = 0;
+      out.push(this.buf.slice(last, end));
+      last = end;
     }
+
+    this.buf = this.buf.slice(last);
+
+    return out;
   }
 
   flush(): string[] {

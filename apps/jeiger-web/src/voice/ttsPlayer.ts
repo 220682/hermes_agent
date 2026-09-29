@@ -4,7 +4,8 @@
  * requests, drops the queue and stops the playing clip. Audio backend and synthesis are injected
  * so the queue is testable without a browser. */
 
-import { SentenceChunker, stripMarkdownForSpeech } from "./sentenceChunker";
+import { SentenceChunker } from "./sentenceChunker";
+import { toSpeakableText } from "./speakableText";
 import type { SpeechClip } from "./speakApi";
 
 export interface AudioBackend {
@@ -107,7 +108,7 @@ export class TtsPlayer {
 
   private enqueue(sentences: string[]): void {
     for (const s of sentences) {
-      const cleaned = stripMarkdownForSpeech(s);
+      const cleaned = toSpeakableText(s);
 
       if (cleaned) {
         this.metrics.firstSentenceAt ??= this.now();

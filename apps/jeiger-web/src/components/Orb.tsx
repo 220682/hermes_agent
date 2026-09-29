@@ -19,6 +19,9 @@ const STATE_LABEL: Record<OrbState, string> = {
   error: "con un error",
 };
 
+/** Fits the free height of the stage (header, voice strip and composer take ~250px). */
+const ORB_SIZE = "max(140px, min(360px, calc(100dvh - 290px)))";
+
 export interface OrbProps {
   state: OrbState;
   /** Filled with the driver that moves the voice bars from real audio (F3-06). */
@@ -55,6 +58,7 @@ export function Orb({ state, driverRef }: OrbProps) {
       height="360"
       ref={svgRef}
       role="img"
+      style={{ width: ORB_SIZE, height: ORB_SIZE, maxWidth: "100%", minHeight: 0 }}
       viewBox="0 0 560 560"
       width="360"
     >
