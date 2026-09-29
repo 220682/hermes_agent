@@ -237,3 +237,12 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - Clave y cuenta en `localStorage` `jeiger.session`; resume al recargar sin ruido si falla; `hydrate` pinta los mensajes que devuelve `session.resume`.
 - Riesgo: el hot-reload de Vite recarga la página, así que ahora retoma la conversación (esperado).
 - Retomar: `cd .worktrees/local-worker-3/apps/jeiger-web && npm run check`.
+
+### Handoff F3 tanda H (Worker, 2026-09-29)
+- `Observado` (código y `npm run check` verdes, 126 tests; falta prueba manual en navegador): F3-21, F3-22, F3-23, F3-24. Ninguno `Conforme`.
+- Commits en `local-worker-3`: `34f68f0df4` (F3-21), `aefd935cdf` (F3-22), `387e3bc0c7` (F3-23), `851052abde` (F3-24). Sin push ni merge.
+- Falta: probar en navegador los procedimientos de la evidencia (Autónomo 30 s sin hablar; con y sin auriculares; corte por voz; tope de 12 s de la puerta).
+- Hallazgo: `speaking` del TTS no cubre el hueco entre frases ni el arranque; se añadió `isBusy`/`onBusy` a `TtsPlayer` y `speech.busy`.
+- Riesgo: la voz mínima de 400 ms sobre 0,06 puede descartar un habla muy baja con micrófono de poca ganancia (motor local); si ocurre, bajar `MIN_VOICE_MS` o el umbral.
+- Riesgo: el corte por voz abre un segundo `getUserMedia` mientras habla JEIGER; con Web Speech el hook cierra ese flujo antes de reabrir el suyo.
+- Retomar: `cd .worktrees/local-worker-3/apps/jeiger-web && npm run check`.
