@@ -25,7 +25,7 @@ Vigentes desde 2026-09-29. Motivo: F1 y F2 se ejecutaron cada una en una sola se
 
 ## Entorno
 
-- Trabajo solo en `.worktrees/local-worker-2` (rama `local-worker-2`, que ya contiene F1). El worktree de `local-worker-1` se quitó el 2026-09-29; la rama sigue existiendo.
+- F2: trabajo en `.worktrees/local-worker-2` (cerrado). **F3: solo en `.worktrees/local-worker-3`** (rama `local-worker-3`, que ya contiene F1 y F2); los worktrees de `local-worker-1` y `local-worker-2` se quitaron el 2026-09-29 (ramas conservadas).
 - Python de Hermes: `%LOCALAPPDATA%\hermes\installs\c0e55254a5cfaa92\environments\768b4ffa04b740d1a62fae0bc6a9a669\venv\Scripts\python.exe` (verificar con `hermes --version` desde el worktree).
 - Verificar servidores locales con PowerShell nativo (`Get-NetTCPConnection`, `Invoke-WebRequest`), no con `curl`/`netstat` de Git Bash.
 - Terminal nueva si hace falta ver el PATH de Cursor (`%LOCALAPPDATA%\cursor-agent`).

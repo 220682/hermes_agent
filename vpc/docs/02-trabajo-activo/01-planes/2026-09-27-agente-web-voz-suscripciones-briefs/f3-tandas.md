@@ -2,6 +2,14 @@
 
 Lee primero `00-reglas-de-contexto.md`. Requiere F2 completa. La rama `local-worker-3` se crea desde `local-worker-2` al empezar F3 (autorizado en D-P7), con su worktree `.worktrees/local-worker-3`; al cerrar F3 se quita el worktree de `local-worker-2` (la rama se conserva).
 
+## Entorno de F3 (preparado por el Orquestador, 2026-09-29)
+
+- Worktree `.worktrees/local-worker-3` (rama `local-worker-3`, desde `local-worker-2` en `0049687ca6`, con toda F1 y F2). El de `local-worker-2` se quitó (rama conservada). Dependencias del front ya instaladas (`npm install --ignore-scripts --engine-strict=false --include-workspace-root -w apps/jeiger-web`, solo lo fijado en el lockfile; repetir ese comando si `node_modules/.bin` vuelve a desaparecer) y `apps/jeiger-web/.env.local` con un token nuevo (no lo leas). Arranque documentado en `apps/jeiger-web/README.md`. **Nunca lances `hermes dashboard`** en este worktree: no hay `web_dist` y dispara un build que borra `node_modules`.
+- Python de Hermes: verificar el entorno con `hermes --version` desde este worktree (puede haber generado uno nuevo). Tests de Python con `HERMES_PYTHON` apuntando al python de `%LOCALAPPDATA%\hermes\installs\c0e55254a5cfaa92\test-environment\gen-*\venv\Scripts\python.exe`.
+- **Navegador:** el servidor MCP de Playwright puede estar desconectado. Prueba sus herramientas; si no existen, usa las de `claude-in-chrome`; si tampoco, verifica con vitest y con la sonda WS, y deja lo demás como `Observado` con una **lista de comprobación manual** para el Responsable humano. Para micrófono sin humano usa Chrome con `--use-fake-device-for-media-stream --use-fake-ui-for-media-stream`; F3-13 (audio real de la máquina con otra música sonando) y la calidad real de STT/TTS **solo puede hacerlas el Responsable humano**: deja el procedimiento paso a paso y márcalo `Observado`, no `Conforme`.
+- **Instalaciones:** si el inventario (F3-01) muestra un paquete de voz faltante, no lo instales: `Observado` con el comando exacto y la razón; el Orquestador decide con lo que ya haya.
+- **Claude:** el cupo estuvo agotado; hasta 3 llamadas reales en toda F3-B (la sesión de tres turnos). Si responde error de límite, cierra ese ítem con eventos simulados y `Observado`. Cursor: sin llamadas reales.
+
 Lecturas propias de F3, con `offset`/`limit`: `hermes_cli/web_routers/audio.py` (rutas `POST /api/audio/transcribe`, `GET /api/audio/voice-config`, `POST /api/audio/speak`, `WS /api/audio/speak-stream`), `tools/tts_tool.py` y `tools/transcription_tools.py` (solo proveedores y configuración), `design.md` (estados del orbe). Reglas: solo STT/TTS gratuitos; TTS por defecto Edge y Piper de respaldo (D-P6); nada de ElevenLabs ni `voice_live`; instalar paquetes solo con autorización del Responsable humano; borrar audios temporales; no prometer latencias no medidas.
 
 ## Tanda A — Entrada de voz (micrófono y STT)
