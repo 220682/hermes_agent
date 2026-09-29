@@ -6,11 +6,13 @@ import { ConversationPanel } from "@/components/ConversationPanel";
 import { HeaderButtons } from "@/components/HeaderButtons";
 import { Orb } from "@/components/Orb";
 import { SystemPanel } from "@/components/SystemPanel";
+import { MicButton, VoiceStrip } from "@/components/VoiceControls";
 import { classifyConnectFailure, type ConnectIssue, connectIssueMessage, reconnectDelayMs } from "@/connectionIssue";
 import { gatewayEventToConversationEvent, type RawGatewayEvent } from "@/conversation/gatewayEvents";
 import { initialConversationState, type OrbState, reduceConversation } from "@/conversation/orbState";
 import { createGatewayClient, createSession, gatewayWsUrl, interruptSession, type ProviderId, submitPrompt } from "@/gateway";
 import { fetchProvidersStatus, type ProvidersStatus, ProvidersStatusError } from "@/providersApi";
+import { useVoiceInput } from "@/voice/useVoiceInput";
 
 const ORB_PILL: Record<string, { label: string; color: string }> = {
   idle: { label: "EN REPOSO", color: "var(--jg-crimson)" },
@@ -30,6 +32,9 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null);
   const [connectIssue, setConnectIssue] = useState<ConnectIssue>("backend-down");
   const [tokenRejected, setTokenRejected] = useState(false);
+
+  const [partial, setPartial] = useState("");
+  const levelRef = useRef<HTMLDivElement>(null);
 
   const clientRef = useRef(createGatewayClient());
   const sessionIdRef = useRef<string | null>(null);
@@ -256,6 +261,21 @@ export default function App() {
     conversation.orb === "thinking" ||
     conversation.orb === "responding";
 
+  // Voice input (F3-02/03/04): a final transcript is sent like typed text.
+  const handleSubmitRef = useRef(handleSubmit);
+
+  handleSubmitRef.current = handleSubmit;
+
+  const voice = useVoiceInput({
+    onPartialText: setPartial,
+    onFinalText: (text) => void handleSubmitRef.current(text),
+    onLevel: (level) => {
+      if (levelRef.current) {
+        levelRef.current.style.transform = `scaleX(${level})`;
+      }
+    },
+  });
+
   const interruptEnabled = conversation.orb === "thinking" || conversation.orb === "responding";
 
   return (
@@ -363,7 +383,24 @@ export default function App() {
         <ConversationPanel state={conversation} />
       </main>
 
-      <Composer disabled={composerDisabled} interruptEnabled={interruptEnabled} onInterrupt={handleInterrupt} onSubmit={handleSubmit} />
+      <VoiceStrip
+        deviceId={voice.deviceId}
+        devices={voice.devices}
+        engine={voice.engine}
+        issue={voice.issue}
+        levelRef={levelRef}
+        onDeviceChange={voice.setDeviceId}
+        partial={partial}
+        status={voice.status}
+      />
+
+      <Composer
+        disabled={composerDisabled}
+        interruptEnabled={interruptEnabled}
+        micSlot={<MicButton disabled={composerDisabled && voice.status === "idle"} onToggle={() => void voice.toggle()} status={voice.status} />}
+        onInterrupt={handleInterrupt}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 }

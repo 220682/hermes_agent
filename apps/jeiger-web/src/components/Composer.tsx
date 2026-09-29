@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 export interface ComposerProps {
   disabled: boolean;
   interruptEnabled: boolean;
   onSubmit: (text: string) => void;
   onInterrupt: () => void;
+  /** Microphone button (voice input, F3). */
+  micSlot: ReactNode;
 }
 
-/** Bottom bar per design.md: campo de texto, enviar, interrumpir. The mic button is a
- * placeholder wired for F3 (voice) -- disabled here, not invented functionality. */
-export function Composer({ disabled, interruptEnabled, onSubmit, onInterrupt }: ComposerProps) {
+/** Bottom bar per design.md: campo de texto, enviar, interrumpir. The mic button comes in
+ * through `micSlot` (F3 voice input). */
+export function Composer({ disabled, interruptEnabled, onSubmit, onInterrupt, micSlot }: ComposerProps) {
   const [text, setText] = useState("");
 
   const submit = () => {
@@ -25,26 +27,7 @@ export function Composer({ disabled, interruptEnabled, onSubmit, onInterrupt }: 
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, height: 60 }}>
-      <button
-        aria-label="Hablar (disponible en F3)"
-        disabled
-        style={{
-          flexShrink: 0,
-          width: 52,
-          height: 52,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: "50%",
-          background: "rgba(220,38,38,0.08)",
-          border: "1px solid rgba(220,38,38,0.3)",
-          opacity: 0.5,
-        }}
-        title="La voz llega en F3"
-        type="button"
-      >
-        <MicIcon />
-      </button>
+      {micSlot}
 
       <input
         aria-label="Escribir un mensaje"
@@ -112,15 +95,6 @@ export function Composer({ disabled, interruptEnabled, onSubmit, onInterrupt }: 
         INTERRUMPIR
       </button>
     </div>
-  );
-}
-
-function MicIcon() {
-  return (
-    <svg aria-hidden="true" fill="none" height="20" stroke="var(--jg-red-pale)" strokeWidth="1.8" viewBox="0 0 24 24" width="20">
-      <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" />
-      <path d="M19 11a7 7 0 0 1-14 0M12 18v3" />
-    </svg>
   );
 }
 
