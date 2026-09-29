@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { startLevelMeter } from "./levelMeter";
 import { pickRecorderMime, transcribeBlob } from "./localTranscribe";
-import { type AudioInput, closeStream, listAudioInputs, openMic } from "./micStream";
+import { type AudioInput, closeStream, listAudioInputs, openMic, openMicUnlessClosed } from "./micStream";
 import { gatedRecordingExpired } from "./noiseGate";
 import { BASE_VOICE_LEVEL, initialSilenceState, silenceTimerDue, stepSilence } from "./silence";
 import {
@@ -65,6 +65,8 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
   const webSpeechFailedRef = useRef(false);
   const [preference, setPreferenceState] = useState<SttPreference>(() => readSttPreference());
   const discardRef = useRef(false);
+  const closedRef = useRef(false);
+  const localTimerRef = useRef<number | null>(null);
   const frameRef = useRef<((level: number) => void) | null>(null);
   const cbRef = useRef({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel, onEmpty, lastSpoken, noiseGateOn });
 
@@ -129,7 +131,16 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
 
   // F3-13: the mic is closed on unmount and when the tab goes away.
   useEffect(() => {
+    closedRef.current = false;
+
     const abort = () => {
+      closedRef.current = true;
+
+      if (localTimerRef.current !== null) {
+        window.clearTimeout(localTimerRef.current);
+        localTimerRef.current = null;
+      }
+
       recognizerRef.current?.abort();
       recognizerRef.current = null;
 
@@ -252,6 +263,8 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
         }
       }, MAX_LOCAL_RECORDING_MS);
 
+      localTimerRef.current = timer;
+
       // F3-15: the level meter's frames decide when the pause is long enough to stop and transcribe.
       let silence = initialSilenceState;
       let tally = initialVoiceTally;
@@ -290,6 +303,7 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
 
       recorder.onstop = () => {
         window.clearTimeout(timer);
+        localTimerRef.current = null;
         frameRef.current = null;
         recorderRef.current = null;
         releaseMic();
@@ -389,16 +403,22 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
     }
 
     setStatus("requesting");
+    closedRef.current = false; // pagehide can be undone by the bfcache; a new click starts clean
 
-    let stream: MediaStream;
+    let stream: MediaStream | null;
 
     try {
-      stream = await openMic(navigator.mediaDevices, deviceId || undefined); // the browser asks here
+      // the browser asks here
+      stream = await openMicUnlessClosed(() => openMic(navigator.mediaDevices, deviceId || undefined), () => closedRef.current);
     } catch (error) {
       setIssue(classifyMicError(error));
       setStatus("idle");
 
       return;
+    }
+
+    if (!stream) {
+      return; // closed while the browser was asking: nothing is started, nothing is left open
     }
 
     streamRef.current = stream;

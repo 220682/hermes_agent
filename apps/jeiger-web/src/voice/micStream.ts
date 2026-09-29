@@ -30,6 +30,20 @@ export function closeStream(stream: MediaStream | null): void {
   stream?.getTracks().forEach((track) => track.stop());
 }
 
+/** Awaits the mic; if the owner went away meanwhile (unmount, pagehide) the stream is closed
+ * right here and null comes back, so a late permission grant never leaves the mic open. */
+export async function openMicUnlessClosed(open: () => Promise<MediaStream>, isClosed: () => boolean): Promise<MediaStream | null> {
+  const stream = await open();
+
+  if (isClosed()) {
+    closeStream(stream);
+
+    return null;
+  }
+
+  return stream;
+}
+
 export async function listAudioInputs(mediaDevices: Pick<MediaDevices, "enumerateDevices">): Promise<AudioInput[]> {
   const devices = await mediaDevices.enumerateDevices();
   const inputs = devices.filter((d) => d.kind === "audioinput" && d.deviceId !== "communications");
