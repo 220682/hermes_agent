@@ -219,3 +219,15 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - TTS: `toSpeakableText` limpia el texto antes de hablar; el divisor respeta abreviaturas, cifras, código y tablas.
 - La voz `es-MX-DaliaNeural` la lee el backend de config; si sigue en inglés, reiniciar el backend.
 - Por confirmar en Edge a 1280/1440/1920 px y oyendo una respuesta larga con listas.
+
+
+## Handoff: F3 tanda F (2026-09-29, Worker)
+
+- Commits en `local-worker-3` (sin push): `67ec6e88d4` F3-14, `4cf34b5a5c` F3-15, `c1f1833632` F3-16, `6901aa1e5b` F3-17. `npm run check` verde (96 tests).
+- Todos `Observado`: lógica pura y tests en verde; falta prueba manual (sin navegador ni audio). Procedimiento en la evidencia.
+- F3-14: se guarda `stored_session_id` y se llama `session.resume` al reabrirse el socket; si falla, sesión nueva con aviso.
+- F3-15/16: Web Speech pasa a `continuous = true` con temporizador; Manual sin silencio; Autónomo reabre el micrófono tras cada respuesta y se corta con error, Esc o Detener.
+- F3-17: solo con reconocimiento local; con Web Speech el botón se desactiva.
+- Riesgo: la franja de voz tiene más controles (Modo, Silencio, Ignorar sonido); revisar que no se corte a 1280 px.
+- Filas F3-14..F3-17 añadidas a la Punch List (no existían) y decisión registrada.
+- Retomar: `cd .worktrees/local-worker-3/apps/jeiger-web && npm run check`.
