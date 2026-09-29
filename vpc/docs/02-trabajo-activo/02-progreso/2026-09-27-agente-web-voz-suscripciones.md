@@ -209,3 +209,13 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - Textos: "Navegador (Web Speech)"; privacidad menciona Google (Chrome) y Microsoft (Edge).
 - Edge arranca en Local por defecto (Whisper por `/api/audio/transcribe`); la elección guardada manda.
 - Por confirmar en Edge a 1280/1440/1920 px, con y sin aviso naranja.
+
+
+## Handoff: interfaz F3-E (2026-09-29, Worker)
+
+- Commit `807e9c340e` en `local-worker-3` (sin push); `npm run check` verde (78 tests). Vite recarga solo.
+- Sin scroll de página: raíz 100dvh; cada columna hace scroll interno; orbe escalado por altura.
+- Franja de voz de una línea; aviso naranja en la misma línea con botón a la derecha.
+- TTS: `toSpeakableText` limpia el texto antes de hablar; el divisor respeta abreviaturas, cifras, código y tablas.
+- La voz `es-MX-DaliaNeural` la lee el backend de config; si sigue en inglés, reiniciar el backend.
+- Por confirmar en Edge a 1280/1440/1920 px y oyendo una respuesta larga con listas.

@@ -398,3 +398,11 @@ Tests nuevos: `voice/sttChoice.test.ts` (forzar local, persistencia tolerante a 
 - Causa: la raíz tenía `height: 100vh` y `main` con `minHeight: 0`; la columna izquierda (Sistema + Atajos, ~610 px) desbordaba `main` y caía sobre la franja de voz. Sin `position:absolute` involucrado.
 - Corrección (commit `afcb15cf31`, `local-worker-3`): `main` con `flex: 1 1 0` y `minHeight: 640`; la raíz hace scroll vertical si no cabe. Selector de micrófono solo en modo Local; textos "Navegador (Web Speech)" y aviso de privacidad Google/Microsoft; Edge (`Edg/`) usa Local por defecto, respetando la elección guardada.
 - `npm run check` verde (71 tests, incluidos selección de modo por user agent, elección guardada y visibilidad del selector). No verificado visualmente (sin navegador).
+
+
+## Evidencia: corrección de interfaz F3-E (2026-09-29, Worker)
+
+- Reporte tras F3-D: apareció scroll de página (`minHeight: 640` + `overflowY: auto` en la raíz). Revertido.
+- Layout (commit `807e9c340e`, `local-worker-3`): raíz `height: 100dvh; overflow: hidden`; cabecera 40 px y compositor 60 px fijos; `main` con `flex: 1 1 0; minHeight: 0`; Sistema+Atajos (compactados) y Conversación con scroll interno; el orbe escala con `max(140px, min(360px, 100dvh - 290px))`. Franja de voz de una sola línea (34 px): Reconocimiento, Micrófono (solo Local), privacidad corta (texto completo en `title`), nivel, estado y aviso naranja con botón a la derecha (texto con elipsis y `title`). Tokens y columnas 300/380 intactos.
+- Voz: nuevo `voice/speakableText.ts` (`toSpeakableText`: quita markdown, código, URLs, emojis, símbolos sueltos, cabeceras de tabla y hashes; saltos de línea a pausas). `SentenceChunker` ya no corta en abreviaturas ("Sr."), iniciales, números que continúan la frase ("el 3. de mayo"), listas numeradas, bloques de código ni tablas. Sustituye a `stripMarkdownForSpeech`.
+- `npm run check` verde (78 tests; `voice/speakableText.test.ts` de invariantes). No verificado visualmente (sin navegador).
