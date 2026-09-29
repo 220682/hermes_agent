@@ -1,0 +1,55 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - generic [ref=f1e5]: JEIGER
+    - generic [ref=f1e6]: EN REPOSO
+    - generic [ref=f1e9]:
+      - button "CUENTA Cursor" [expanded] [active] [ref=f1e96] [cursor=pointer]:
+        - generic [ref=f1e11]:
+          - generic [ref=f1e12]: CUENTA
+          - generic [ref=f1e13]: Cursor
+      - listbox "Tipo de cuenta" [ref=f1e98]:
+        - option "Claude signed in with claude.ai" [ref=f1e99] [cursor=pointer]:
+          - generic [ref=f1e100]:
+            - generic [ref=f1e101]: Claude
+            - generic [ref=f1e102]: signed in with claude.ai
+        - option "Cursor Could not find the 'cursor' CLI command 'cursor-agent'. Install it." [selected] [ref=f1e104] [cursor=pointer]:
+          - generic [ref=f1e105]:
+            - generic [ref=f1e106]: Cursor
+            - generic [ref=f1e107]: Could not find the 'cursor' CLI command 'cursor-agent'. Install it.
+  - status [ref=f1e97]: Could not find the 'cursor' CLI command 'cursor-agent'. Install it.
+  - generic [ref=f1e14]:
+    - generic [ref=f1e15]:
+      - generic [ref=f1e16]:
+        - generic [ref=f1e17]: SISTEMA
+        - generic [ref=f1e18]:
+          - generic [ref=f1e19]: CEREBRO
+          - generic [ref=f1e20]: Cursor · CLI oficial
+        - generic [ref=f1e21]:
+          - generic [ref=f1e22]: SESIÓN
+          - generic [ref=f1e23]: Sin iniciar sesión
+        - generic [ref=f1e25]:
+          - generic [ref=f1e26]: OÍDO (STT)
+          - generic [ref=f1e27]: Por definir en F3
+        - generic [ref=f1e28]:
+          - generic [ref=f1e29]: VOZ (TTS)
+          - generic [ref=f1e30]: Por definir en F3
+      - generic [ref=f1e31]:
+        - generic [ref=f1e32]: ATAJOS
+        - generic [ref=f1e33]:
+          - generic [ref=f1e34]: Enviar
+          - generic [ref=f1e35]: Enter
+        - generic [ref=f1e36]:
+          - generic [ref=f1e37]: Interrumpir
+          - generic [ref=f1e38]: Esc
+    - generic [ref=f1e39]:
+      - img "Orbe de JEIGER, en reposo" [ref=f1e40]
+      - generic [ref=f1e68]: EN REPOSO
+    - generic [ref=f1e69]:
+      - generic [ref=f1e70]: CONVERSACIÓN
+      - generic [ref=f1e71]: Escribe abajo para hablar con JEIGER. Pulsa Enter para enviar, Esc para interrumpir.
+  - generic [ref=f1e72]:
+    - button "Hablar (disponible en F3)" [disabled] [ref=f1e73] [cursor=pointer]
+    - textbox "Escribir un mensaje" [disabled] [ref=f1e77]:
+      - /placeholder: Escribe tu mensaje…
+    - button "Enviar" [disabled] [ref=f1e78] [cursor=pointer]
+    - button "INTERRUMPIR" [disabled] [ref=f1e81] [cursor=pointer]

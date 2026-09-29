@@ -1,0 +1,54 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]: JEIGER
+    - generic [ref=e6]: EN REPOSO
+    - generic [ref=e9]:
+      - button "CUENTA Claude · Claude Pro" [expanded] [active] [ref=e85] [cursor=pointer]:
+        - generic [ref=e11]:
+          - generic [ref=e12]: CUENTA
+          - generic [ref=e13]: Claude · Claude Pro
+      - listbox "Tipo de cuenta" [ref=e86]:
+        - option "Claude signed in with claude.ai" [selected] [ref=e87] [cursor=pointer]:
+          - generic [ref=e88]:
+            - generic [ref=e89]: Claude
+            - generic [ref=e90]: signed in with claude.ai
+        - option "Cursor Could not find the 'cursor' CLI command 'cursor-agent'. Install it." [ref=e92] [cursor=pointer]:
+          - generic [ref=e93]:
+            - generic [ref=e94]: Cursor
+            - generic [ref=e95]: Could not find the 'cursor' CLI command 'cursor-agent'. Install it.
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]: SISTEMA
+        - generic [ref=e19]:
+          - generic [ref=e20]: CEREBRO
+          - generic [ref=e21]: Claude Code · CLI oficial
+        - generic [ref=e22]:
+          - generic [ref=e23]: SESIÓN
+          - generic [ref=e24]: Conectada
+        - generic [ref=e26]:
+          - generic [ref=e27]: OÍDO (STT)
+          - generic [ref=e28]: Por definir en F3
+        - generic [ref=e29]:
+          - generic [ref=e30]: VOZ (TTS)
+          - generic [ref=e31]: Por definir en F3
+      - generic [ref=e32]:
+        - generic [ref=e33]: ATAJOS
+        - generic [ref=e34]:
+          - generic [ref=e35]: Enviar
+          - generic [ref=e36]: Enter
+        - generic [ref=e37]:
+          - generic [ref=e38]: Interrumpir
+          - generic [ref=e39]: Esc
+    - generic [ref=e40]:
+      - img "Orbe de JEIGER, en reposo" [ref=e41]
+      - generic [ref=e69]: EN REPOSO
+    - generic [ref=e70]:
+      - generic [ref=e71]: CONVERSACIÓN
+      - generic [ref=e72]: Escribe abajo para hablar con JEIGER. Pulsa Enter para enviar, Esc para interrumpir.
+  - generic [ref=e73]:
+    - button "Hablar (disponible en F3)" [disabled] [ref=e74] [cursor=pointer]
+    - textbox "Escribir un mensaje" [ref=e78]:
+      - /placeholder: Escribe tu mensaje…
+    - button "Enviar" [ref=e79] [cursor=pointer]
+    - button "INTERRUMPIR" [disabled] [ref=e82] [cursor=pointer]
