@@ -319,3 +319,8 @@ native/fts5_cjk/*.so
 /pm/.lock.json.lock
 
 apps/desktop/.dist-build*
+
+# JEIGER local dev server logs (may capture URLs and tokens)
+jeiger_backend.log
+jeiger_frontend.log
+*.log.*
