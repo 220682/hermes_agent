@@ -13,7 +13,7 @@
 | Rol | Rama | Estado |
 |---|---|---|
 | Worker fase 1 | `local-worker-1` (`.worktrees/local-worker-1`) | Terminada, pendiente de Auditoría |
-| Worker fase 2 | `local-worker-2` (`.worktrees/local-worker-2`, desde `local-worker-1`) | En curso |
+| Worker fase 2 (tandas A, B, C) | `local-worker-2` (`.worktrees/local-worker-2`, desde `local-worker-1`) | Parcial; tanda A por lanzar |
 | Worker fase 3 | `local-worker-3` (se crea al empezar F3, desde `local-worker-2`) | Sin asignar |
 
 ## Avances terminados
@@ -50,7 +50,7 @@ Ninguno: F1 está terminada. A la espera de que el Orquestador asigne Auditor y 
 - Haiku ignora el formato `<tool_call>` del contrato original; se reforzó y el parser acepta `<function_calls>`.
 - Cursor: los eventos `assistant` mezclan narración y respuesta final sin forma distinguible; la respuesta se toma de `result.result`.
 - Cursor es un `.cmd` de Windows: el turno nunca va en `argv` (cmd.exe reinterpreta metacaracteres); va en un archivo del workspace aislado.
-- **Cursor consume saldo/crédito de la cuenta, no un cupo separado de la suscripción** — confirmado por el Responsable humano tras probar el CLI con su propio login (mensaje del coordinador, 2026-09-28). Registrado en Riesgos, en "Reglas de negocio acordadas" y en la evidencia (Límites de uso).
+- ~~Cursor consume saldo/crédito, no cupo de suscripción~~ — **corregido el 2026-09-28 por el Responsable humano**: la prueba se hizo con crédito gratuito de prueba y sin suscripción activa; no prueba nada sobre un plan pagado. Vigente: Riesgos punto 2 del plan. Pendiente repetir con Pro/Pro+ activo.
 - Import circular propio entre `agent/cli_brain.py` y `providers/__init__.py`; corregido. Un aviso de `hermes doctor` que parecía un bug del núcleo era efecto de ese import circular, no del núcleo (se corrigió la anotación en la evidencia tras repetir la prueba).
 - Preguntas de negocio al Responsable humano: ninguna. Sí hubo dos avisos del coordinador durante la fase (corte por límite de sesión de Claude, y confirmación del consumo de saldo de Cursor), ambos atendidos y documentados donde corresponde.
 
@@ -67,6 +67,14 @@ Que el Orquestador presente F1 para Auditoría, o autorice empezar F2 con `local
 ## Última actualización y responsable
 
 2026-09-28, Worker fase 1.
+
+## Reorganización del 2026-09-29 (Orquestador)
+
+Estado real de F2 en `local-worker-2` (commit `48a79d2f3b`): backend `providers_status.py` verificado en real; scaffold de `apps/jeiger-web` (App, Orb, AccountSelector, Composer, ConversationPanel, SystemPanel, tokens, máquina de estados del orbe y adaptador de eventos con sus tests) escrito pero **sin verificar contra la Punch List**. Ítems F2 todavía `Sin verificar` salvo F2-01 (`Observado`).
+
+Se detectó gasto excesivo de tokens (línea base en `../01-planes/2026-09-27-agente-web-voz-suscripciones-briefs/medicion.md`). Correcciones: F2 en tandas A/B/C y F3 en tandas A/B, un Worker nuevo por tanda; briefs por tanda; se quitó el worktree de `local-worker-1` (rama conservada); un solo worktree activo. **Próximo paso:** lanzar el Worker de la tanda A de F2 con `f2-tanda-a.md`, con autorización del Responsable humano, y medir al cerrar.
+
+Pendiente de limpieza (no bloqueante, en la tanda C): logs y `package-lock.json` subidos por error en `48a79d2f3b`; ver `f2-tanda-c.md`.
 
 ## Handoffs
 
