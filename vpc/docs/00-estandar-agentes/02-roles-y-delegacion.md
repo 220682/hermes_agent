@@ -48,6 +48,16 @@ Define el objetivo, aprueba en los Gates y resuelve las consultas directas del W
 - Entregar contexto cerrado al Planner, a los Workers y al Auditor.
 - Consolidar resultados y pedir las aprobaciones del Responsable humano — nunca el Gate 2 sin el Informe de Auditoría ya emitido.
 - Coordinar el cierre solo después de la autorización del Gate 2.
+- **Monitorear el uso de tokens y dar metas, no ahogar con restricciones** (añadido el 2026-09-29, ver "Monitoreo de tokens" abajo).
+
+### Monitoreo de tokens y metas por tanda
+
+El Orquestador es responsable del costo del proceso, no solo de su avance. Al lanzar cada Worker fija una **meta** medible por tanda (llamadas, contexto máximo, tokens leídos de caché) y, al terminar, la **mide** con los transcripts de sesión (script y línea base del plan en su carpeta de briefs) y la anota. Reglas:
+
+1. **Meta, no prohibición.** Al Worker se le da un objetivo y un presupuesto orientativo, con lo que necesita saber (brief corto). No se llena su prompt de restricciones; solo las que protegen algo real (secretos, ramas ajenas, dinero, cupos agotados).
+2. **Superar la meta no es un fallo ni un "no se pudo".** Si una tanda pasa la meta, el Orquestador hace una **revisión breve de causa** (qué se leyó, repitió o iteró en exceso), corrige el brief y **continúa** con la siguiente tanda. Si la desviación es grande (más del doble de la meta) o el ítem quedó sin cerrar, encarga una **auditoría o revisión puntual** (Auditor o un Worker de revisión) antes de seguir, y luego continúa; no se detiene el plan por eso.
+3. **Cortar por tandas desde el plan.** El Planner reparte cada fase en tandas de 4 a 8 ítems con brief propio; un Worker = una tanda = una sesión, cerrada con handoff. Una fase entera en una sola sesión de Worker no se permite.
+4. **Decidir sin esperar.** Ante una decisión que el Gate 1 no cubrió y que no toca las acciones reservadas a autorización explícita (`01-principios-y-seguridad.md`), el Orquestador decide, la registra en el Registro de decisiones del plan con su motivo y sigue; el Responsable humano la revisa en el siguiente contacto.
 
 ### Límites
 
@@ -70,6 +80,7 @@ Recibe el objetivo aprobado (Spec/SDD) y produce:
 - Archivos o componentes afectados.
 - Pruebas y criterios de aceptación.
 - División de Workers solo cuando exista independencia real de archivos, migraciones, componentes base o recursos.
+- **Tandas:** cada fase repartida en tandas de 4 a 8 ítems, cada una con un brief de ≤ 8 KB (ítems, contrato técnico ya verificado, meta de consumo). Un plan de más de ~15 ítems sin tandas no está listo para el Gate 1.
 - Prompt breve y cerrado para cada Worker.
 - Alcance y prompt del Auditor.
 - **Anticipar incongruencias con reglas de negocio ya documentadas**, revisando los flujos de negocio afectados antes de que el plan se apruebe. Esto reduce los conflictos que aparecen recién durante la implementación a los que de verdad no se podían prever.

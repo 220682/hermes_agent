@@ -5,7 +5,7 @@ Vigentes desde 2026-09-29. Motivo: F1 y F2 se ejecutaron cada una en una sola se
 ## Una tanda = un Worker = una sesión
 
 - Cada fase se reparte en **tandas** (`f2-tanda-a.md`, etc.). Un Worker recibe **una sola tanda**, la termina y **cierra**. No continúa con la siguiente: el Orquestador lanza un Worker nuevo.
-- Tope: **80 llamadas a herramientas** por tanda. Al llegar a 60 sin haber terminado, el Worker deja de abrir frentes nuevos, cierra lo que tiene y escribe el handoff con lo que falta.
+- **Meta:** unas 80 llamadas a herramientas por tanda (orientativa, no un muro). Al llegar a ~60 sin haber terminado, el Worker deja de abrir frentes nuevos, cierra lo que tiene y escribe el handoff con lo que falta. Si el ítem exige más, lo dice en el handoff y el Orquestador decide (revisión de causa o auditoría puntual y siguiente tanda); pasarse de la meta no es un fallo.
 - Si la sesión se corta por límite de uso, el siguiente Worker retoma desde el handoff, no desde el plan completo.
 
 ## Qué leer (y qué no)
