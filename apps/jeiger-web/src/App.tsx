@@ -10,8 +10,9 @@ import { MicButton, VoiceStrip } from "@/components/VoiceControls";
 import { classifyConnectFailure, type ConnectIssue, connectIssueMessage, reconnectDelayMs } from "@/connectionIssue";
 import { gatewayEventToConversationEvent, type RawGatewayEvent } from "@/conversation/gatewayEvents";
 import { type ConversationEvent, initialConversationState, type OrbState, reduceConversation } from "@/conversation/orbState";
-import { createGatewayClient, createSession, gatewayWsUrl, interruptSession, type ProviderId, submitPrompt } from "@/gateway";
+import { createGatewayClient, createSession, gatewayWsUrl, interruptSession, type ProviderId, resumeSession, submitPrompt } from "@/gateway";
 import { fetchProvidersStatus, type ProvidersStatus, ProvidersStatusError } from "@/providersApi";
+import { recoverSession, type SessionHandle } from "@/sessionRecovery";
 import type { OrbAudioDriver } from "@/voice/orbAudio";
 import { decideSpaceAction } from "@/voice/spaceKey";
 import { fetchVoiceConfig, type VoiceConfigSummary } from "@/voice/speakApi";
@@ -49,7 +50,13 @@ export default function App() {
 
   const clientRef = useRef(createGatewayClient());
   const sessionIdRef = useRef<string | null>(null);
+  // Durable key for session.resume (F3-14); survives a dropped socket, unlike the live id.
+  const sessionKeyRef = useRef<string | null>(null);
+  const recoveryRef = useRef<Promise<void> | null>(null);
+  const providerRef = useRef<ProviderId>("claude-cli");
   const orbRef = useRef(conversation.orb);
+
+  providerRef.current = provider;
 
   useEffect(() => {
     sessionIdRef.current = sessionId;
@@ -72,16 +79,48 @@ export default function App() {
       // already reported the drop (F2-09/F2-11 must agree, never one without
       // the other).
       if (state === "closed" || state === "error") {
-        // A reconnect talks to a fresh `hermes serve` process that never heard
-        // of the old session id: force a new session.create on the next
-        // submit instead of calling prompt.submit against an id it will
-        // reject.
-        setSessionId(null);
-
+        // The live id dies with the socket, but the stored key survives (F3-14): the next "open"
+        // resumes it, so a hidden tab whose heartbeats were throttled keeps its context.
         if (orbRef.current === "thinking" || orbRef.current === "responding") {
           dispatch({ type: "turn.failed", message: "Se perdió la conexión con el backend durante el turno." });
         }
       }
+    });
+
+    const offResume = client.onState((state) => {
+      const key = sessionKeyRef.current;
+
+      if (state !== "open" || !key || recoveryRef.current) {
+        return;
+      }
+
+      const previous: SessionHandle = { sid: sessionIdRef.current ?? key, key };
+
+      const job = recoverSession(
+        previous,
+        (k) => resumeSession(client, k),
+        () => createSession(client, providerRef.current),
+      )
+        .then((result) => {
+          sessionIdRef.current = result.handle.sid; // events for the new live id must not be dropped
+          sessionKeyRef.current = result.handle.key;
+          setSessionId(result.handle.sid);
+
+          if (result.notice) {
+            setNotice(result.notice);
+          }
+        })
+        .catch(() => {
+          sessionIdRef.current = null;
+          sessionKeyRef.current = null;
+          setSessionId(null);
+          setNotice("No se pudo reanudar la conversación anterior.");
+        })
+        .finally(() => {
+          recoveryRef.current = null;
+        });
+
+      recoveryRef.current = job;
     });
 
     const offEvent = client.onAny((event) => {
@@ -156,6 +195,7 @@ export default function App() {
       window.clearTimeout(connectTimer);
       window.clearTimeout(retryTimer);
       offRetry();
+      offResume();
       offState();
       offEvent();
       client.close();
@@ -185,16 +225,20 @@ export default function App() {
   // Provider fixed per session (F2-08, prompt-cache rule): a session is created lazily,
   // once, for the CURRENT provider; switching provider never mutates it.
   const ensureSession = useCallback(async (): Promise<string | null> => {
+    await recoveryRef.current;
+
     if (sessionIdRef.current || connection !== "open") {
       return sessionIdRef.current;
     }
 
     try {
-      const id = await createSession(clientRef.current, provider);
+      const handle = await createSession(clientRef.current, provider);
 
-      setSessionId(id);
+      sessionIdRef.current = handle.sid;
+      sessionKeyRef.current = handle.key;
+      setSessionId(handle.sid);
 
-      return id;
+      return handle.sid;
     } catch {
       dispatch({ type: "turn.failed", message: "No se pudo crear la sesión con el backend." });
 
@@ -216,6 +260,8 @@ export default function App() {
     );
 
     setProvider(next);
+    sessionIdRef.current = null;
+    sessionKeyRef.current = null;
     setSessionId(null);
     dispatch({ type: "reset" });
   };
