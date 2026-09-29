@@ -28,4 +28,6 @@ Lecturas propias de F3, con `offset`/`limit`: `hermes_cli/web_routers/audio.py` 
 | F3-12 | Latencias STT y TTS medidas en esta máquina sin GPU (medidas, no objetivos) |
 | R-04 | El chat de texto sigue funcionando con la voz activada y desactivada |
 
+**Pendientes heredados de F2 (decidido 2026-09-29):** F2-07 (ver `pensando → respondiendo → reposo` en la UI con un turno real) y F2-13 (Esc/botón interrumpen un turno largo y el orbe vuelve a reposo) quedaron `Observado`: el streaming y la interrupción están probados por eventos WebSocket, pero falta verlo en pantalla. Reverificarlos en la sesión de tres turnos de F3-08 (una captura por estado, más una interrupción) y actualizar sus filas a `Conforme`.
+
 Cupos: una sesión de voz de tres turnos usa 3 llamadas reales a Claude; no más.

@@ -43,6 +43,7 @@ for f in sorted(glob.glob(base+'/**/*.jsonl',recursive=True),key=os.path.getmtim
 |---|---|---|---|---|---|
 | F2-A | `agent-acc09511` | 21 (32 herramientas) | 93k | 1,5M | Sí (meta: ≤ 80 / ≤ 200k / ≤ 12M). Frente a la línea base del Worker de F2 (191 / 625k / 97,4M): ~65 veces menos tokens de caché. Cerró 4 ítems Conforme y 1 Observado |
 | F2-B | `agent-aa5fa9c4` | 55 (77 herramientas) | 133k | 5,4M | Sí en contexto y caché (≤ 200k / ≤ 12M); herramientas 77, bajo el tope de 80 pero sobre el punto de cierre de 60. 4 ítems Conforme, 2 Observados (F2-07 por causa del backend, F2-13 por cupo de Claude agotado) |
+| F2-B2 | `agent-af96b963` | 32 (49 herramientas) | 112k | 2,8M | Sí. Encontró y corrigió la causa del streaming (`_should_stream`); F2-07 y F2-13 siguen Observados (faltó confirmación en la UI) |
 | F2-C | | | | | |
 | F3-A | | | | | |
 | F3-B | | | | | |

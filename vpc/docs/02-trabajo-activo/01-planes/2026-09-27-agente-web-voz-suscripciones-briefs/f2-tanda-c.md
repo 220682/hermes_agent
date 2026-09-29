@@ -15,6 +15,13 @@ Lee primero `00-reglas-de-contexto.md`. Requiere las tandas A y B cerradas. Rama
 | P-03 | Sobre las rutas que usa la app: 401 sin token, 401 con token erróneo, 200 con el correcto | respuestas de las tres peticiones |
 | R-02 | `hermes dashboard`, `hermes serve` y `apps/desktop` arrancan como antes; `web/`, `tui_gateway/`, `apps/desktop/` sin cambios | `git diff --stat main..HEAD -- web tui_gateway apps/desktop` vacío + arranque de cada uno |
 
+## Contexto heredado de las tandas A, B y B2 (no reinvestigar)
+
+- Streaming de `claude-cli` corregido en `agent/turn_api_call.py` (`_should_stream`, commit `6e087f2fd0`); F2-07 y F2-13 quedan `Observado` hasta F3 (ver `f3-tandas.md`): no los cierres tú, y **no gastes llamadas reales a Claude ni a Cursor** en esta tanda (el cupo de Claude está agotado y Cursor no tiene crédito). Todo se verifica sin turnos reales: `/?orb=…`, eventos simulados y respuestas simuladas de `/api/providers/status`.
+- Token: aplica la "Regla de seguridad del token" de `f2-tanda-b.md`. No leas `.env.local` ni `.playwright-mcp/`.
+- Tests de Python: `scripts/run_tests.sh` no activa el entorno en este worktree; usar `HERMES_PYTHON` apuntando al python del `test-environment` (`%LOCALAPPDATA%\hermes\installs\c0e55254a5cfaa92\test-environment\gen-*\venv\Scripts\python.exe`). R-02 no necesita tests de Python nuevos.
+- Esc ya es un listener de `window`; la conexión WS se difiere un tick (`setTimeout`) para evitar el doble montaje de StrictMode.
+
 ## Pendiente de limpieza (decidido el 2026-09-29, no bloqueante)
 
 El commit `48a79d2f3b` de `local-worker-2` subió `apps/jeiger-web/jeiger_frontend.log`, `jeiger_backend.log` y un `package-lock.json` raíz modificado. Antes del cierre de F2: `git rm --cached` de los logs, añadirlos al `.gitignore` y revisar el diff del `package-lock.json` (que solo cambie por `apps/jeiger-web`). Hacerlo en un commit nuevo; no reescribir el historial de una rama ya subida sin autorización del Responsable humano.

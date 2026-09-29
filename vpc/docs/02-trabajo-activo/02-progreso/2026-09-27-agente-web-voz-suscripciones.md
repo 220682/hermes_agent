@@ -143,3 +143,11 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - Retomar: `$env:HERMES_DASHBOARD_SESSION_TOKEN` desde `.env.local` (por script), `hermes_cli.main serve --port 9119 --skip-build` (tarda ~25 s en abrir) y `npm run dev`.
 - Sondas WS: scratchpad `ws_probe.py` (no commiteada).
 - Tanda C sin empezar.
+
+### Handoff F2 tanda B2 (2026-09-29, Worker local-worker-2)
+- Causa: `agent/turn_api_call.py::_should_stream` (~L57) desactivaba el streaming de todo `acp://`; el turno se plegaba en un `message.complete`. No estaba en `tui_gateway` (sin cambios ahí, `web/` y `apps/desktop/` intactos).
+- Arreglo: flag `HERMES_CLIENT_STREAMS` en `CliBrainClient` + lectura en `_should_stream`; 1 test invariante (rojo/verde). 28 tests verdes.
+- Real: sonda WS da `message.delta` (7) e interrupción `status=interrupted`. Llamadas reales a Claude: 2 (cupo agotado para más).
+- Observado: F2-07 (falta captura UI de PENSANDO/RESPONDIENDO) y F2-13 (falta ver orbe a reposo tras Esc en UI). F1-03 reverificado.
+- Retomar: arrancar serve + `npm run dev`; para capturar estados, forzar `?orb=responding` (DEV) o usar un turno más lento; tests: `HERMES_PYTHON=<test-environment>/venv/Scripts/python.exe scripts/run_tests.sh ...`.
+- Hallazgo: `scripts/run_tests.sh` falla la activación en este worktree; con HERMES_PYTHON al test-environment funciona.
