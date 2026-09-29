@@ -1,0 +1,64 @@
+{
+ "result": {
+  "scenario": "E6",
+  "iter": "2",
+  "pass": true,
+  "notes": [],
+  "summary": {
+   "readings": [
+    {
+     "button": true,
+     "insidePanel": true,
+     "belowMessages": true,
+     "rightHalf": true,
+     "overlapsText": 0
+    },
+    {
+     "button": true,
+     "insidePanel": true,
+     "belowMessages": true,
+     "rightHalf": true,
+     "overlapsText": 0
+    },
+    {
+     "button": true,
+     "insidePanel": true,
+     "belowMessages": true,
+     "rightHalf": true,
+     "overlapsText": 0
+    }
+   ]
+  },
+  "consoleErrors": [],
+  "bubbles": [
+   {
+    "who": "TÚ",
+    "text": "linea 1 de una pregunta larga para llenar el panel de conversacion linea 2 de una pregunta larga para llenar el panel de conversacion linea 3 de una pregunta larga para llenar el panel de conversacion linea 4 de una pregunta larga para llenar el panel de conversacion linea 5 de una pregunta larga para llenar el panel de conversacion linea 6 de una pregunta larga para llenar el panel de conversacion linea 7 de una pregunta larga para llenar el panel de conversacion linea 8 de una pregunta larga para llenar el panel de conversacion linea 9 de una pregunta larga para llenar el panel de conversacion linea 10 de una pregunta larga para llenar el panel de conversacion linea 11 de una pregunta larga para llenar el panel de conversacion linea 12 de una pregunta larga para llenar el panel de conversacion linea 13 de una pregunta larga para llenar el panel de conversacion linea 14 de una pregunta larga para llenar el panel de conversacion linea 15 de una pregunta larga para llenar el panel de conversacion linea 16 de una pregunta larga para llenar el panel de conversacion linea 17 de una pregunta larga para llenar el panel de conversacion linea 18 de una pregunta larga para llenar el panel de conversacion linea 19 de una pregunta larga para llenar el panel de conversacion linea 20 de una pregunta larga para llenar el panel de conversacion linea 21 de una pregunta larga para llenar el panel de conversacion linea 22 de una pregunta larga para llenar el panel de conversacion linea 23 de una pregunta larga para llenar el panel de conversacion linea 24 de una pregunta larga para llenar el panel de conversacion linea 25 de una pregunta larga para llenar el panel de conversacion linea 26 de una pregunta larga para llenar el panel de conversacion linea 27 de una pregunta larga para llenar el panel de conversacion linea 28 de una pregunta larga para llenar el panel de conversacion linea 29 de una pregunta larga para llenar el panel de conversacion linea 30 de una pregunta larga para llenar el panel de conversacion linea 31 de una pregunta larga para llenar el panel de conversacion linea 32 de una pregunta larga para llenar el panel de conversacion linea 33 de una pregunta larga para llenar el panel de conversacion linea 34 de una pregunta larga para llenar el panel de conversacion linea 35 de una pregunta larga para llenar el panel de conversacion linea 36 de una pregunta larga para llenar el panel de conversacion linea 37 de una pregunta larga para llenar el panel de conversacion linea 38 de una pregunta larga para llenar el panel de conversacion linea 39 de una pregunta larga para llenar el panel de conversacion linea 40 de una pregunta larga para llenar el panel de conversacion"
+   }
+  ]
+ },
+ "sent": [],
+ "timeline": [
+  {
+   "t": 162,
+   "ev": "ui",
+   "orb": "",
+   "phase": "",
+   "mic": ""
+  },
+  {
+   "t": 544,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 15597,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, pensando",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  }
+ ]
+}

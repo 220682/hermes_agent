@@ -1,0 +1,62 @@
+{
+ "result": {
+  "scenario": "E4",
+  "iter": "1",
+  "pass": false,
+  "notes": [],
+  "error": "Error: locator.click: Error: strict mode violation: getByText('INTERRUMPIR') resolved to 3 elements:\n    1) <span data-testid=\"latencies\">…</span> aka getByTestId('latencies')\n    2) <span>Interrumpir</span> aka getByText('Interrumpir', { exact: true })\n    3) <button type=\"button\">…</button> aka getByRole('button', { name: 'INTERRUMPIR' })\n\nCall log:\n\u001b[2m  - waiting for getByText('INTERRUMPIR')\u001b[22m\n",
+  "consoleErrors": [],
+  "bubbles": [
+   {
+    "who": "TÚ",
+    "text": "Mi número favorito es el 47, recuérdalo. Ahora explícame en cinco frases la historia de Lima."
+   },
+   {
+    "who": "JEIGER",
+    "text": "Listo, 47 — guardado. 🙂\n\nAquí tienes la historia de Lima en cinco frases:\n\nLima fue fundada por Francisco Pizarro el 18 de enero de 1535, con el nombre de \"Ciudad de los Reyes\". Durante el Virreinato, se convirtió en la capital más importante de Sudamérica y sede del poder español. En 1746 un terremoto devastador destruyó gran parte de la ciudad, que tuvo que ser reconstruida. Lima jugó un papel clave en la independencia del Perú, proclamada allí en 1821 por José de San Martín. Hoy es una metrópoli moderna que mezcla arquitectura colonial, como su Centro Histórico (Patrimonio de la UNESCO), con el crecimiento urbano contemporáneo."
+   },
+   {
+    "who": "TÚ",
+    "text": "¿Cuál era mi número favorito? Dilo primero y después cuéntame en cinco frases la historia de Cusco."
+   }
+  ]
+ },
+ "sent": [
+  {
+   "ev": "ws.prompt",
+   "text": "Mi número favorito es el 47, recuérdalo. Ahora explícame en cinco frases la historia de Lima."
+  },
+  {
+   "ev": "ws.prompt",
+   "text": "¿Cuál era mi número favorito? Dilo primero y después cuéntame en cinco frases la historia de Cusco."
+  }
+ ],
+ "timeline": [
+  {
+   "t": 159,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 10792,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, pensando",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 11702,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, respondiendo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 13476,
+   "ev": "tts.start",
+   "dur": 3120
+  }
+ ]
+}

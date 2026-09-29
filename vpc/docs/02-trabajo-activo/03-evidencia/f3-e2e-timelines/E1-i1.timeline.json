@@ -1,0 +1,73 @@
+{
+ "result": {
+  "scenario": "E1",
+  "iter": "1",
+  "pass": true,
+  "notes": [
+   "E1 passes when nothing was sent in 45 s (loop may keep going or give up with the notice)."
+  ],
+  "summary": {
+   "sentCount": 0,
+   "recordings": 2,
+   "gaveUpNotice": false
+  },
+  "consoleErrors": [],
+  "bubbles": []
+ },
+ "sent": [],
+ "timeline": [
+  {
+   "t": 153,
+   "ev": "ui",
+   "orb": "",
+   "phase": "",
+   "mic": ""
+  },
+  {
+   "t": 355,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 9710,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "Escuchando",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 9785,
+   "ev": "mic.open"
+  },
+  {
+   "t": 9786,
+   "ev": "rec.start",
+   "open": 1
+  },
+  {
+   "t": 39787,
+   "ev": "rec.stop",
+   "open": 0
+  },
+  {
+   "t": 39788,
+   "ev": "rec.data",
+   "size": 7254
+  },
+  {
+   "t": 39788,
+   "ev": "mic.close"
+  },
+  {
+   "t": 40169,
+   "ev": "mic.open"
+  },
+  {
+   "t": 40185,
+   "ev": "rec.start",
+   "open": 1
+  }
+ ]
+}

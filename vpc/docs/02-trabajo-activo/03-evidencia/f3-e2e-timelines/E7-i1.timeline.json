@@ -1,0 +1,97 @@
+{
+ "result": {
+  "scenario": "E7",
+  "iter": "1",
+  "pass": true,
+  "notes": [],
+  "consoleErrors": [],
+  "bubbles": [
+   {
+    "who": "TÚ",
+    "text": "¿Cuál es la capital de Perú?"
+   }
+  ]
+ },
+ "sent": [
+  {
+   "ev": "ws.prompt",
+   "text": "¿Cuál es la capital de Perú?"
+  }
+ ],
+ "timeline": [
+  {
+   "t": 153,
+   "ev": "ui",
+   "orb": "",
+   "phase": "",
+   "mic": ""
+  },
+  {
+   "t": 373,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 10208,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "Escuchando",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 10454,
+   "ev": "mic.open"
+  },
+  {
+   "t": 10455,
+   "ev": "rec.start",
+   "open": 1
+  },
+  {
+   "t": 15434,
+   "ev": "rec.stop",
+   "open": 0
+  },
+  {
+   "t": 15436,
+   "ev": "rec.data",
+   "size": 35091
+  },
+  {
+   "t": 15437,
+   "ev": "mic.close"
+  },
+  {
+   "t": 15446,
+   "ev": "stt.req"
+  },
+  {
+   "t": 15453,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "Pensando",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 19364,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 19457,
+   "ev": "stt.res",
+   "text": "¿Cuál es la capital de Perú?"
+  },
+  {
+   "t": 19511,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, pensando",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  }
+ ]
+}

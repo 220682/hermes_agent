@@ -1,0 +1,184 @@
+{
+ "result": {
+  "scenario": "E3",
+  "iter": "3",
+  "pass": true,
+  "notes": [
+   {
+    "similar": true,
+    "dup": false,
+    "extraSends": 0
+   }
+  ],
+  "summary": {
+   "sent": [
+    "¿Cuál es la capital de Perú? Ahora dime, ¿cuál es la capital de Chile?"
+   ],
+   "stt": [
+    "¿Cuál es la capital de Perú? Ahora dime, ¿cuál es la capital de Chile?"
+   ],
+   "expected": [
+    "¿Cuál es la capital de Perú? Ahora dime, ¿cuál es la capital de Chile?"
+   ],
+   "overlaps": [],
+   "shortGaps": [],
+   "maxOpen": 1,
+   "nRec": 2,
+   "nTts": 1,
+   "ttsStarts": 1
+  },
+  "consoleErrors": [],
+  "bubbles": [
+   {
+    "who": "TÚ",
+    "text": "¿Cuál es la capital de Perú? Ahora dime, ¿cuál es la capital de Chile?"
+   },
+   {
+    "who": "JEIGER",
+    "text": "La capital de Perú es Lima, y la capital de Chile es Santiago."
+   }
+  ]
+ },
+ "sent": [
+  {
+   "ev": "ws.prompt",
+   "text": "¿Cuál es la capital de Perú? Ahora dime, ¿cuál es la capital de Chile?"
+  }
+ ],
+ "timeline": [
+  {
+   "t": 153,
+   "ev": "ui",
+   "orb": "",
+   "phase": "",
+   "mic": ""
+  },
+  {
+   "t": 356,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 11289,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "Escuchando",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 11549,
+   "ev": "mic.open"
+  },
+  {
+   "t": 11551,
+   "ev": "rec.start",
+   "open": 1
+  },
+  {
+   "t": 20127,
+   "ev": "rec.stop",
+   "open": 0
+  },
+  {
+   "t": 20129,
+   "ev": "rec.data",
+   "size": 80042
+  },
+  {
+   "t": 20130,
+   "ev": "mic.close"
+  },
+  {
+   "t": 20139,
+   "ev": "stt.req"
+  },
+  {
+   "t": 20260,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "Pensando",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 22148,
+   "ev": "stt.res",
+   "text": "¿Cuál es la capital de Perú? Ahora dime, ¿cuál es la capital de Chile?"
+  },
+  {
+   "t": 22207,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, pensando",
+   "phase": "Pensando",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 26705,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, respondiendo",
+   "phase": "Pensando",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 26854,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "Escuchando",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 28851,
+   "ev": "tts.start",
+   "dur": 4656
+  },
+  {
+   "t": 28953,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, respondiendo",
+   "phase": "Hablando",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 33506,
+   "ev": "tts.end"
+  },
+  {
+   "t": 33602,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "Escuchando",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 34733,
+   "ev": "mic.open"
+  },
+  {
+   "t": 34769,
+   "ev": "rec.start",
+   "open": 1
+  },
+  {
+   "t": 34778,
+   "ev": "rec.stop",
+   "open": 0
+  },
+  {
+   "t": 34794,
+   "ev": "rec.data",
+   "size": 110
+  },
+  {
+   "t": 34795,
+   "ev": "mic.close"
+  },
+  {
+   "t": 34804,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  }
+ ]
+}

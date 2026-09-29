@@ -1,0 +1,99 @@
+{
+ "result": {
+  "scenario": "E4",
+  "iter": "2",
+  "pass": false,
+  "notes": [],
+  "summary": {
+   "cutEsc": {
+    "started": true,
+    "stops": 1,
+    "orbAfter": "Orbe de JEIGER, en reposo",
+    "stillPlayingAfter600ms": false,
+    "recStartsAfter": 0,
+    "stillPlayingAfter3s": false
+   },
+   "cutBtn": {
+    "stops": 1,
+    "orbAfter": "Orbe de JEIGER, en reposo",
+    "stillPlayingAfter600ms": false
+   },
+   "bubblesAfterReload": 0,
+   "answer": "¡Listo, ya lo sé — tu número favorito es el 47! (Aunque ya lo tenía guardado de antes 😊)\n\nAquí tienes la historia de Lima en cinco frases:\n\n1. Lima fue fundada por Francisco Pizarro el 18 de enero de 1535, con el nombre de \"Ciudad de los Reyes\".\n2. Durante la época colonial, se convirtió en la capital del Virreinato del Perú y en uno de los centros administrativos y comerciales más importantes de América del Sur.\n3. En el siglo XIX, tras la independencia proclamada por José de San Martín en 1821, Lima pasó a ser la capital de la República del Perú.\n4. A lo largo del siglo XX, la ciudad creció enormemente debido a la migración desde el interior del país, transformándose en una gran metrópoli.\n5. Hoy en día, Lima es una ciudad moderna que mezcla su | Tu número favorito es el **47**.\n\nAhora, la historia de Cusco en cinco frases:\n\n1. Cusco fue la capital del Imperio Inca y, según la tradición, fue fundada por Manco Cápac alrededor del siglo XIII.\n2. Bajo el gobierno de Pachacútec, la ciudad se convirtió en el centro político, religioso y administrativo del Tahuantinsuyo.\n3. En 1533, los españoles liderados por Francisco Pizarro tomaron la ciudad, marcando el inicio de la conquista y colonización del imperio inca.\n4. Durante la época colonial, Cusco fue reconstruida con templos y edificios coloniales sobre los cimientos de construcciones incas, como se ve en el Coricancha y la iglesia de Santo Domingo.\n5. Hoy en día, Cusco es Patrimonio de la Humanidad y una de las ciudades más vis"
+  },
+  "E4": true,
+  "E5": false,
+  "consoleErrors": [],
+  "bubbles": [
+   {
+    "who": "TÚ",
+    "text": "Mi número favorito es el 47, recuérdalo. Ahora explícame en cinco frases la historia de Lima."
+   },
+   {
+    "who": "JEIGER",
+    "text": "¡Listo, ya lo sé — tu número favorito es el 47! (Aunque ya lo tenía guardado de antes 😊)\n\nAquí tienes la historia de Lima en cinco frases:\n\n1. Lima fue fundada por Francisco Pizarro el 18 de enero de 1535, con el nombre de \"Ciudad de los Reyes\".\n2. Durante la época colonial, se convirtió en la capital del Virreinato del Perú y en uno de los centros administrativos y comerciales más importantes de América del Sur.\n3. En el siglo XIX, tras la independencia proclamada por José de San Martín en 1821, Lima pasó a ser la capital de la República del Perú.\n4. A lo largo del siglo XX, la ciudad creció enormemente debido a la migración desde el interior del país, transformándose en una gran metrópoli.\n5. Hoy en día, Lima es una ciudad moderna que mezcla su"
+   },
+   {
+    "who": "TÚ",
+    "text": "¿Cuál era mi número favorito? Dilo primero y después cuéntame en cinco frases la historia de Cusco."
+   },
+   {
+    "who": "JEIGER",
+    "text": "Tu número favorito es el **47**.\n\nAhora, la historia de Cusco en cinco frases:\n\n1. Cusco fue la capital del Imperio Inca y, según la tradición, fue fundada por Manco Cápac alrededor del siglo XIII.\n2. Bajo el gobierno de Pachacútec, la ciudad se convirtió en el centro político, religioso y administrativo del Tahuantinsuyo.\n3. En 1533, los españoles liderados por Francisco Pizarro tomaron la ciudad, marcando el inicio de la conquista y colonización del imperio inca.\n4. Durante la época colonial, Cusco fue reconstruida con templos y edificios coloniales sobre los cimientos de construcciones incas, como se ve en el Coricancha y la iglesia de Santo Domingo.\n5. Hoy en día, Cusco es Patrimonio de la Humanidad y una de las ciudades más vis"
+   }
+  ]
+ },
+ "sent": [
+  {
+   "ev": "ws.prompt",
+   "text": "Mi número favorito es el 47, recuérdalo. Ahora explícame en cinco frases la historia de Lima."
+  },
+  {
+   "ev": "ws.prompt",
+   "text": "¿Cuál era mi número favorito? Dilo primero y después cuéntame en cinco frases la historia de Cusco."
+  }
+ ],
+ "timeline": [
+  {
+   "t": 156,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 12967,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, pensando",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 17260,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, respondiendo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 18651,
+   "ev": "tts.start",
+   "dur": 3120
+  },
+  {
+   "t": 19692,
+   "ev": "tts.stop"
+  },
+  {
+   "t": 19712,
+   "ev": "tts.end"
+  },
+  {
+   "t": 19809,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  }
+ ]
+}

@@ -1,0 +1,186 @@
+{
+ "result": {
+  "scenario": "E1",
+  "iter": "5",
+  "pass": true,
+  "notes": [
+   "E1 passes when nothing was sent in 45 s (loop may keep going or give up with the notice)."
+  ],
+  "summary": {
+   "sentCount": 0,
+   "recordings": 6,
+   "gaveUpNotice": true
+  },
+  "consoleErrors": [],
+  "bubbles": []
+ },
+ "sent": [],
+ "timeline": [
+  {
+   "t": 152,
+   "ev": "ui",
+   "orb": "",
+   "phase": "",
+   "mic": ""
+  },
+  {
+   "t": 361,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 13144,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "Escuchando",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  },
+  {
+   "t": 13411,
+   "ev": "mic.open"
+  },
+  {
+   "t": 13426,
+   "ev": "rec.start",
+   "open": 1
+  },
+  {
+   "t": 43427,
+   "ev": "rec.stop",
+   "open": 0
+  },
+  {
+   "t": 43428,
+   "ev": "rec.data",
+   "size": 7198
+  },
+  {
+   "t": 43429,
+   "ev": "mic.close"
+  },
+  {
+   "t": 43807,
+   "ev": "mic.open"
+  },
+  {
+   "t": 43823,
+   "ev": "rec.start",
+   "open": 1
+  },
+  {
+   "t": 73826,
+   "ev": "rec.stop",
+   "open": 0
+  },
+  {
+   "t": 73827,
+   "ev": "rec.data",
+   "size": 7296
+  },
+  {
+   "t": 73828,
+   "ev": "mic.close"
+  },
+  {
+   "t": 74211,
+   "ev": "mic.open"
+  },
+  {
+   "t": 74228,
+   "ev": "rec.start",
+   "open": 1
+  },
+  {
+   "t": 104229,
+   "ev": "rec.stop",
+   "open": 0
+  },
+  {
+   "t": 104229,
+   "ev": "rec.data",
+   "size": 7296
+  },
+  {
+   "t": 104230,
+   "ev": "mic.close"
+  },
+  {
+   "t": 104608,
+   "ev": "mic.open"
+  },
+  {
+   "t": 104625,
+   "ev": "rec.start",
+   "open": 1
+  },
+  {
+   "t": 134627,
+   "ev": "rec.stop",
+   "open": 0
+  },
+  {
+   "t": 134628,
+   "ev": "rec.data",
+   "size": 7296
+  },
+  {
+   "t": 134629,
+   "ev": "mic.close"
+  },
+  {
+   "t": 135004,
+   "ev": "mic.open"
+  },
+  {
+   "t": 135021,
+   "ev": "rec.start",
+   "open": 1
+  },
+  {
+   "t": 165022,
+   "ev": "rec.stop",
+   "open": 0
+  },
+  {
+   "t": 165023,
+   "ev": "rec.data",
+   "size": 7296
+  },
+  {
+   "t": 165024,
+   "ev": "mic.close"
+  },
+  {
+   "t": 165398,
+   "ev": "mic.open"
+  },
+  {
+   "t": 165416,
+   "ev": "rec.start",
+   "open": 1
+  },
+  {
+   "t": 195417,
+   "ev": "rec.stop",
+   "open": 0
+  },
+  {
+   "t": 195417,
+   "ev": "rec.data",
+   "size": 7296
+  },
+  {
+   "t": 195418,
+   "ev": "mic.close"
+  },
+  {
+   "t": 195453,
+   "ev": "ui",
+   "orb": "Orbe de JEIGER, en reposo",
+   "phase": "",
+   "mic": "Respuestas habladas: activadas (pulsa para desactivar)"
+  }
+ ]
+}

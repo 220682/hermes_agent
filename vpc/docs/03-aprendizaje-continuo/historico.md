@@ -93,3 +93,23 @@ Formato de cada entrada: `../00-estandar-agentes/06-plantillas/08-aprendizaje.md
 - **Resultado:** el Auditor ejecutó 27 tests Python (`test_cli_brain`, `test_cli_brain_providers`, `test_external_process_provider_init`, `test_audio_speak_temp_files`) verdes con esa variable.
 - **Cuándo reutilizarla:** al correr tests en un worktree de esta máquina. Es un ajuste de entorno, no una regla del repositorio.
 - **Reemplaza a:** ninguna.
+
+## 2026-09-29 — Verificar la interfaz con un arnés de navegador propio, antes de pedir pruebas al humano `[pruebas]` `[voz]` `[playwright]`
+
+- **Origen:** plan `2026-09-27-agente-web-voz-suscripciones`, F3 (tandas F a I).
+- **Problema:** cuatro tandas de voz cerraron con todo `Observado` porque "no había navegador" (el MCP de Playwright estaba caído) y el Responsable humano tuvo que probar a mano cada cambio; una de sus pruebas se invalidó sola al recargar la página.
+- **Causa:** el brief daba por perdido el navegador sin buscar alternativas, y no se había construido una verificación que no dependiera de un humano.
+- **Cómo se resolvió:** un script de Playwright como librería (instalada en una carpeta temporal, sin tocar el repo), con el Edge instalado y `--use-fake-device-for-media-stream --use-file-for-fake-audio-capture` con WAV generados con `edge-tts`; se instrumentó `MediaRecorder`/audio para sacar una línea de tiempo (grabador abierto, TTS sonando, texto enviado). Guardado en `03-evidencia/f3-e2e-harness.mjs`.
+- **Resultado:** cinco escenarios (silencio, una frase, dos frases, corte con Esc, recarga) pasaron y de paso salieron un falso positivo de la guardia de eco y una etiqueta desfasada. No se reprodujo el "sonido mezclado" que el humano oyó: un micrófono simulado no reproduce eco de altavoces ni audio del sistema, y eso sigue siendo prueba humana.
+- **Cuándo reutilizarla:** en cualquier interfaz con voz o audio; el arnés se copia y se adapta.
+- **Reemplaza a:** ninguna.
+
+## 2026-09-29 — El estado que se quiere probar debe sobrevivir a la recarga, o el procedimiento debe decir "no recargues" `[interfaz]` `[sesiones]`
+
+- **Origen:** plan `2026-09-27-agente-web-voz-suscripciones`, F3-14 y F3-19.
+- **Problema:** el Responsable humano dijo un dato, recargó para cargar código nuevo y el agente no lo recordaba: el identificador de sesión vivía solo en el estado de React.
+- **Causa:** la recarga descartaba la sesión; un arreglo previo cubría solo la caída del WebSocket, no la recarga.
+- **Cómo se resolvió:** guardar en `localStorage` (con `try/catch`) el identificador que acepta `session.resume`, reanudar al conectar, y añadir un botón "Nueva conversación".
+- **Resultado:** el arnés recargó la página y el agente respondió el dato (`history=4` en `agent.log`).
+- **Cuándo reutilizarla:** al diseñar cualquier cliente con sesión larga contra un backend que conserve el estado.
+- **Reemplaza a:** ninguna.

@@ -14,7 +14,7 @@
 |---|---|---|
 | Worker fase 1 | `local-worker-1` (`.worktrees/local-worker-1`) | Terminada; auditada; pendiente de Gate 2 |
 | Worker fase 2 (tandas A, B, C) | `local-worker-2` (desde `local-worker-1`; ya sin worktree, rama conservada) | Terminada; 3 ítems `Observado`; auditada; pendiente de Gate 2 |
-| Worker fase 3 (tandas A, B) | `local-worker-3` (`.worktrees/local-worker-3`, desde `local-worker-2`) | Terminada; 11 ítems `Observado`; auditada; pendiente de Gate 2 |
+| Worker fase 3 (tandas A–I) | `local-worker-3` (`.worktrees/local-worker-3`, desde `local-worker-2`) | Terminada; 44 ítems Conforme y 20 `Observado` en todo el plan; auditada (F3, 2026-09-29); pendiente de Gate 2 |
 
 ## Avances terminados
 
