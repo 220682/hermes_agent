@@ -45,5 +45,5 @@ for f in sorted(glob.glob(base+'/**/*.jsonl',recursive=True),key=os.path.getmtim
 | F2-B | `agent-aa5fa9c4` | 55 (77 herramientas) | 133k | 5,4M | Sí en contexto y caché (≤ 200k / ≤ 12M); herramientas 77, bajo el tope de 80 pero sobre el punto de cierre de 60. 4 ítems Conforme, 2 Observados (F2-07 por causa del backend, F2-13 por cupo de Claude agotado) |
 | F2-B2 | `agent-af96b963` | 32 (49 herramientas) | 112k | 2,8M | Sí. Encontró y corrigió la causa del streaming (`_should_stream`); F2-07 y F2-13 siguen Observados (faltó confirmación en la UI) |
 | F2-C | `agent-a8c4baaf` | 70 (81 herramientas) | 178k | 8,7M | Sí (≤ 200k / ≤ 12M; herramientas 81 ≈ meta 80). 7 ítems Conforme, R-02 Conforme con salvedad. Incidente: `hermes dashboard --skip-build` reescribió `node_modules` del worktree (restaurado por el Orquestador) |
-| F3-A | | | | | |
+| F3-A | `agent-a55264f0` | 32 (39 herramientas) | 126k | 2,8M | Sí. Código completo (36 tests, lint verde); los 6 ítems `Observado` por falta de paquetes de voz, de navegador con micrófono y de prueba humana, no por exceso de consumo |
 | F3-B | | | | | |

@@ -25,6 +25,8 @@ Lecturas propias de F3, con `offset`/`limit`: `hermes_cli/web_routers/audio.py` 
 
 ## Tanda B — Salida de voz, orbe reactivo e interrupción
 
+**Contexto de la tanda A (2026-09-29):** el código de entrada de voz existe (`apps/jeiger-web/src/voice/`, `VoiceControls.tsx`, commit `2a541af662`). No hay `edge-tts`, `piper-tts` ni `faster-whisper` instalados y **no se instalan** (decisión del Orquestador, en espera del Responsable humano). Construye la salida de voz contra el contrato real de `hermes_cli/web_routers/audio.py` (`POST /api/audio/speak`, `WS /api/audio/speak-stream`, `GET /api/audio/voice-config`) usando servidores/respuestas simulados y tests (vitest); cola de frases, reproducción, `AnalyserNode` sobre el audio del TTS, interrupción (Espacio para hablar, Esc, botón; corta audio y cancela el turno), modo conversación y medición de latencias con simulación. Lo que exija audio real o paquetes queda `Observado` con el procedimiento manual. Añade la tecla **Espacio para hablar** y actualiza el panel Sistema, que aún dice "Por definir en F3" para STT y TTS. El selector de micrófono no aplica a Web Speech: dilo en la interfaz.
+
 | ID | Qué debe cumplirse |
 |---|---|
 | F3-05 | TTS gratuito por frases mientras llega el texto; el primer audio empieza antes de que termine la respuesta |

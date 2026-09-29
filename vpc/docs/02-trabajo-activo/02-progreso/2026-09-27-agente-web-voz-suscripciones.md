@@ -160,3 +160,12 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - PROBLEMA: `hermes dashboard --skip-build` intentó un build de recuperación y dejó `node_modules` del worktree sin `.bin`, `typescript` ni `vitest`. Antes de seguir: `npm install` en la raíz del worktree (necesita autorización) y `npm run check` en `apps/jeiger-web`.
 - Retomar: README de `apps/jeiger-web` (dos terminales PowerShell). Playwright MCP: `routeWebSocket` tumba el servidor, usar `addInitScript`.
 - Hallazgos: `.playwright-mcp/` contiene el token en logs antiguos (borrar); WS rechazado con HTTP sin código 4401; orbe `error` de `orb.css` queda solo para `?orb=error`.
+
+
+### Handoff F3 tanda A (2026-09-29, Worker local-worker-3)
+- Todo `Observado` (ninguno Conforme): F3-01, F3-02, F3-03, F3-04, F3-09, F3-13. Código completo y probado con vitest (36 verdes) en commit `2a541af662` de `local-worker-3`; sin push.
+- F3-01: no hay faster-whisper, piper-tts ni edge-tts (ni ffmpeg) en ningún venv. Comando propuesto en la evidencia; el Orquestador/Responsable humano decide. Sin ellos, F3-04 real y toda la tanda B (Edge/Piper) quedan bloqueadas.
+- Sonda real: `/api/audio/transcribe` responde 400 "No STT provider available"; `voice-config` da modo relay; sin token 401.
+- No hubo navegador con micrófono (Playwright MCP caído; no usé el Chrome del Responsable humano). Falta: dictado real, permiso, capturas de errores, F3-13 (procedimiento paso a paso en la evidencia).
+- Retomar: `cd .worktrees/local-worker-3/apps/jeiger-web; npm run check; npm run dev`, y serve con `hermes_cli.main serve --port 9119 --skip-build`.
+- Hallazgos: con `HERMES_CLIENT_STREAMS`/serve todo arranca en ~40 s; la selección de micrófono no aplica a Web Speech (Chrome usa el predeterminado); el panel Sistema aún dice "Por definir en F3" para STT/TTS; tanda B debe añadir Espacio para hablar.

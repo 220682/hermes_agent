@@ -289,3 +289,27 @@ Efecto colateral: el intento de recuperación de build del dashboard reescribió
 - Un fallo del handshake WS hace que el navegador escriba `ws://...?token=` en consola; la sonda HTTP previa lo evita casi siempre, no en una caída justo entre sonda y socket. Los logs de `.playwright-mcp/` de esta y de anteriores tandas contienen el token (carpeta ignorada por git): conviene borrarla.
 - El WS se rechaza con estado HTTP (sin código 4401 visible), por eso el "token inválido" se detecta por el 401 de `/api/providers/status`.
 - `hermes dashboard` reconstruye y muta `node_modules` aunque se pase `--skip-build`.
+
+
+## F3 tanda A — Entrada de voz (2026-09-29, Worker local-worker-3, commit 2a541af662)
+
+Código: `apps/jeiger-web/src/voice/*` (voiceIssues, micStream, levelMeter, sttEngine, localTranscribe, useVoiceInput) y `components/VoiceControls.tsx`; el botón de micrófono del Composer y la franja de voz (transcripción parcial, nivel, selector, aviso de privacidad, errores) están cableados en `App.tsx`. `npm run check` verde (typecheck, 36 tests, lint). Sin capturas: no había navegador con micrófono controlable (Playwright MCP caído; no se usó el Chrome real del Responsable humano para no tocar su audio).
+
+**F3-01 · Observado.** Inventario en ambos venvs de Hermes (`environments/768b…` y `7b2f…`, Python 3.14.7) y en el entorno de tests: `faster-whisper`, `piper-tts`, `edge-tts`, `ctranslate2`, `onnxruntime`, `sounddevice`, `numpy` NO instalados; `ffmpeg` no está en el PATH. Proveedor TTS por defecto del código: `edge` (D-P6). Para decidir con el Responsable humano (no instalado): `python -c "from pm import sync_venv; sync_venv(['voice','edge-tts','piper'], explicit=True)"` (extras `voice` = faster-whisper 1.2.1 + sounddevice + numpy; `edge-tts` = 7.2.7; `piper` = piper-tts 1.8.0), y ffmpeg para convertir opus/mp3.
+
+**F3-02 · Observado.** `micConstraints` fija `echoCancellation/noiseSuppression/autoGainControl` y `video:false`; `getUserMedia` solo se llama al pulsar el botón (el navegador pregunta entonces); si se rechaza, no se arranca reconocedor ni grabadora (test). Indicador de nivel con `AnalyserNode` + `requestAnimationFrame` escribiendo `style.transform` sin estado de React; el analizador no se conecta a `destination`. Falta ver el permiso en Chrome real.
+
+**F3-03 · Observado.** Web Speech (`es-ES`, `interimResults`) con texto parcial en la franja y envío del final como un mensaje normal; el aviso de privacidad (audio a servidores de Google) se muestra siempre que el motor previsto es Web Speech. Falta dictar una frase real.
+
+**F3-04 · Observado.** `MediaRecorder` → `POST /api/audio/transcribe` con `data_url` base64. Sonda real contra `hermes_cli.main serve` (token cargado por script, no impreso; serve detenido al acabar): `GET /api/audio/voice-config` → `{"ok":true,"stt":{"mode":"relay",...},"tts":{"mode":"relay",...}}`; sin token → 401; `POST /api/audio/transcribe` con audio de prueba → HTTP 400 `No STT provider available. Install faster-whisper...`. La UI trata ese 400 como `stt-unavailable` (aviso + texto). Falta instalar faster-whisper para transcribir de verdad. El motor local se usa si no hay Web Speech o si Web Speech dio `network`.
+
+**F3-09 · Observado.** `voiceIssues.ts`: sin micrófono, permiso denegado, micrófono ocupado, sin soporte, silencio, STT caído, autoplay bloqueado (para la tanda B) y TTS caído; todos los mensajes terminan en "escribe en el campo de texto" y el campo nunca se deshabilita (tests). Falta captura de cada caso.
+
+**F3-13 · Observado (solo el Responsable humano).** Diseño: solo `getUserMedia` en modo compartido (sin `exact`, sin exclusivo), sin drivers ni cables, selector "Micrófono" (por defecto "Predeterminado de Windows", guardado en localStorage), pistas y `AudioContext` cerrados al terminar, en `pagehide` y al desmontar. Procedimiento manual:
+1. Antes: en Configuración de sonido de Windows anota la salida y la entrada predeterminadas y el volumen; abre Volume Mixer.
+2. Pon música o un vídeo con volumen medio y déjalo sonar.
+3. Arranca backend y `npm run dev` (README de `apps/jeiger-web`), abre `http://localhost:5173` en Chrome, pulsa el micrófono y acepta el permiso.
+4. Habla 20 s con la música sonando. Comprueba: la música no se corta ni se atenúa, el volumen de otras apps en el mezclador no baja, las predeterminadas de Windows no cambian, aparece el nivel y el texto.
+5. Pulsa de nuevo el micrófono: el icono de grabación de la pestaña desaparece. Repite y cierra la pestaña estando a la escucha: el icono de micrófono de Chrome/Windows debe desaparecer.
+6. Cambia el selector a otro micrófono (si hay) y repite.
+7. Anota qué sonaba y el resultado de cada punto.
