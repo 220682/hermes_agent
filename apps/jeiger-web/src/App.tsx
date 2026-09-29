@@ -10,9 +10,10 @@ import { MicButton, VoiceStrip } from "@/components/VoiceControls";
 import { classifyConnectFailure, type ConnectIssue, connectIssueMessage, reconnectDelayMs } from "@/connectionIssue";
 import { gatewayEventToConversationEvent, type RawGatewayEvent } from "@/conversation/gatewayEvents";
 import { type ConversationEvent, initialConversationState, type OrbState, reduceConversation } from "@/conversation/orbState";
-import { createGatewayClient, createSession, gatewayWsUrl, interruptSession, type ProviderId, resumeSession, submitPrompt } from "@/gateway";
+import { createGatewayClient, createSession, gatewayWsUrl, interruptSession, type ProviderId, resumeConversation, resumeSession, submitPrompt } from "@/gateway";
 import { fetchProvidersStatus, type ProvidersStatus, ProvidersStatusError } from "@/providersApi";
 import { recoverSession, type SessionHandle } from "@/sessionRecovery";
+import { readStoredSession, sessionToStore, writeStoredSession } from "@/storedSession";
 import { HEADSET_LINE, isFloorTooHigh, measureNoiseFloor, voiceLevelFor } from "@/voice/noiseGate";
 import type { OrbAudioDriver } from "@/voice/orbAudio";
 import { readSilenceMs, writeSilenceMs } from "@/voice/silence";
@@ -36,7 +37,7 @@ type BackendConnection = "connecting" | "open" | "closed" | "error";
 
 export default function App() {
   const [conversation, dispatch] = useReducer(reduceConversation, initialConversationState);
-  const [provider, setProvider] = useState<ProviderId>("claude-cli");
+  const [provider, setProvider] = useState<ProviderId>(() => readStoredSession()?.provider ?? "claude-cli");
   const [providersStatus, setProvidersStatus] = useState<ProvidersStatus | null>(null);
   const [connection, setConnection] = useState<BackendConnection>("connecting");
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -56,8 +57,10 @@ export default function App() {
   const sessionIdRef = useRef<string | null>(null);
   // Durable key for session.resume (F3-14); survives a dropped socket, unlike the live id.
   const sessionKeyRef = useRef<string | null>(null);
+  // F3-19: a page reload finds the previous conversation here; it is resumed on the first connect.
+  const storedRef = useRef(readStoredSession());
   const recoveryRef = useRef<Promise<void> | null>(null);
-  const providerRef = useRef<ProviderId>("claude-cli");
+  const providerRef = useRef<ProviderId>(provider);
   const orbRef = useRef(conversation.orb);
 
   providerRef.current = provider;
@@ -92,9 +95,41 @@ export default function App() {
     });
 
     const offResume = client.onState((state) => {
+      if (state !== "open" || recoveryRef.current) {
+        return;
+      }
+
+      // Page reload (F3-19): no live session yet, but a stored one. Resume it quietly; if the backend
+      // no longer has it, forget it and let the first question open a fresh session, without noise.
+      const stored = storedRef.current;
+
+      if (!sessionKeyRef.current && !sessionIdRef.current && stored) {
+        storedRef.current = null;
+
+        recoveryRef.current = resumeConversation(client, stored.key)
+          .then(({ handle, turns }) => {
+            sessionIdRef.current = handle.sid;
+            sessionKeyRef.current = handle.key;
+            setSessionId(handle.sid);
+            writeStoredSession(sessionToStore(handle, providerRef.current));
+
+            if (turns.length > 0) {
+              dispatch({ type: "hydrate", transcript: turns });
+            } else {
+              setNotice("Conversación retomada: el agente la recuerda.");
+            }
+          })
+          .catch(() => writeStoredSession(null))
+          .finally(() => {
+            recoveryRef.current = null;
+          });
+
+        return;
+      }
+
       const key = sessionKeyRef.current;
 
-      if (state !== "open" || !key || recoveryRef.current) {
+      if (!key) {
         return;
       }
 
@@ -109,6 +144,7 @@ export default function App() {
           sessionIdRef.current = result.handle.sid; // events for the new live id must not be dropped
           sessionKeyRef.current = result.handle.key;
           setSessionId(result.handle.sid);
+          writeStoredSession(sessionToStore(result.handle, providerRef.current));
 
           if (result.notice) {
             setNotice(result.notice);
@@ -118,6 +154,7 @@ export default function App() {
           sessionIdRef.current = null;
           sessionKeyRef.current = null;
           setSessionId(null);
+          writeStoredSession(null);
           setNotice("No se pudo reanudar la conversación anterior.");
         })
         .finally(() => {
@@ -241,6 +278,7 @@ export default function App() {
       sessionIdRef.current = handle.sid;
       sessionKeyRef.current = handle.key;
       setSessionId(handle.sid);
+      writeStoredSession(sessionToStore(handle, provider));
 
       return handle.sid;
     } catch {
@@ -267,6 +305,7 @@ export default function App() {
     sessionIdRef.current = null;
     sessionKeyRef.current = null;
     setSessionId(null);
+    writeStoredSession(null);
     dispatch({ type: "reset" });
   };
 
@@ -377,6 +416,22 @@ export default function App() {
   const handleInterruptRef = useRef(handleInterrupt);
 
   handleInterruptRef.current = handleInterrupt;
+
+  // F3-20: forget the stored conversation; the next question opens a new session. A turn or spoken
+  // reply in flight is cut first. The old session stays in the backend, untouched.
+  const handleNewConversation = () => {
+    if (orbRef.current === "thinking" || orbRef.current === "responding" || speech.speaking) {
+      handleInterrupt();
+    }
+
+    storedRef.current = null;
+    writeStoredSession(null);
+    sessionIdRef.current = null;
+    sessionKeyRef.current = null;
+    setSessionId(null);
+    setNotice(null);
+    dispatch({ type: "reset" });
+  };
 
   const speakingRef = useRef(false);
   const micToggleRef = useRef<() => void>(() => {});
@@ -579,6 +634,22 @@ export default function App() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={handleNewConversation}
+            style={{
+              minHeight: 44,
+              padding: "0 14px",
+              color: "var(--jg-red-pale)",
+              fontSize: 13,
+              background: "rgba(220,38,38,0.12)",
+              border: "1px solid var(--jg-red-light)",
+              borderRadius: 10,
+            }}
+            title="Olvida esta conversación y empieza otra"
+            type="button"
+          >
+            Nueva conversación
+          </button>
           <AccountSelector onSelect={handleSelectProvider} selected={provider} status={providersStatus} />
           <HeaderButtons onToggleSpeak={() => speech.setEnabled(!speech.enabled)} speakReplies={speech.enabled} />
         </div>

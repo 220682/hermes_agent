@@ -31,6 +31,7 @@ interface SessionCreateResult {
 interface SessionResumeResult {
   session_id: string;
   session_key?: string;
+  messages?: { role: string; text?: string }[];
 }
 
 /** One session per chosen account (D-P... proveedor fijo por sesión / prompt-cache rule):
@@ -46,6 +47,20 @@ export async function resumeSession(client: JsonRpcGatewayClient, key: string): 
   const result = await client.request<SessionResumeResult>("session.resume", { session_id: key });
 
   return { sid: result.session_id, key: result.session_key ?? key };
+}
+
+/** Page reload (F3-19): same resume, plus the earlier turns the backend sends back (none when omitted). */
+export async function resumeConversation(
+  client: JsonRpcGatewayClient,
+  key: string,
+): Promise<{ handle: SessionHandle; turns: { role: "user" | "assistant"; text: string }[] }> {
+  const result = await client.request<SessionResumeResult>("session.resume", { session_id: key });
+
+  const turns = (result.messages ?? []).flatMap((m) =>
+    (m.role === "user" || m.role === "assistant") && m.text?.trim() ? [{ role: m.role, text: m.text }] : [],
+  );
+
+  return { handle: { sid: result.session_id, key: result.session_key ?? key }, turns };
 }
 
 export function submitPrompt(client: JsonRpcGatewayClient, sessionId: string, text: string): Promise<unknown> {

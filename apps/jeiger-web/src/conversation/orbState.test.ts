@@ -93,4 +93,15 @@ describe("reduceConversation", () => {
     expect(late.orb).toBe("idle");
     expect(late.draftAssistantText).toBe("");
   });
+
+  it("hydrates an empty conversation with resumed turns but never overwrites a live one", () => {
+    const turns = [{ role: "user", text: "hola" } as const, { role: "assistant", text: "qué tal" } as const];
+    const hydrated = reduceConversation(initialConversationState, { type: "hydrate", transcript: [...turns] });
+
+    expect(hydrated.transcript).toEqual(turns);
+
+    const live = reduceConversation(initialConversationState, { type: "submit", text: "ahora" });
+
+    expect(reduceConversation(live, { type: "hydrate", transcript: [...turns] })).toBe(live);
+  });
 });

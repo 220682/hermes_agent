@@ -27,6 +27,7 @@ export type ConversationEvent =
   | { type: "turn.completed"; status: "complete" | "interrupted"; text: string }
   | { type: "turn.failed"; message: string }
   | { type: "interrupt" }
+  | { type: "hydrate"; transcript: TranscriptEntry[] }
   | { type: "reset" };
 
 export const initialConversationState: ConversationState = {
@@ -82,6 +83,10 @@ export function reduceConversation(state: ConversationState, event: Conversation
 
     case "interrupt":
       return { ...state, orb: "idle", draftAssistantText: "" };
+
+    case "hydrate":
+      // A resumed conversation (F3-19) shows its earlier turns; a turn already started here wins.
+      return state.transcript.length === 0 && state.orb === "idle" ? { ...state, transcript: event.transcript } : state;
 
     case "reset":
       return initialConversationState;
