@@ -3,10 +3,11 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { AccountSelector } from "@/components/AccountSelector";
 import { Composer } from "@/components/Composer";
 import { ConversationPanel } from "@/components/ConversationPanel";
+import { HeaderButtons } from "@/components/HeaderButtons";
 import { Orb } from "@/components/Orb";
 import { SystemPanel } from "@/components/SystemPanel";
 import { gatewayEventToConversationEvent, type RawGatewayEvent } from "@/conversation/gatewayEvents";
-import { initialConversationState, reduceConversation } from "@/conversation/orbState";
+import { initialConversationState, type OrbState, reduceConversation } from "@/conversation/orbState";
 import { createGatewayClient, createSession, gatewayWsUrl, interruptSession, type ProviderId, submitPrompt } from "@/gateway";
 import { fetchProvidersStatus, type ProvidersStatus } from "@/providersApi";
 
@@ -41,6 +42,7 @@ export default function App() {
   // Backend connection + gateway.ready -> tui_gateway/AGENTS.md event stream.
   useEffect(() => {
     const client = clientRef.current;
+
     const offState = client.onState((state) => {
       setConnection(state);
 
@@ -84,7 +86,6 @@ export default function App() {
       offEvent();
       client.close();
     };
-     
   }, []);
 
   // Provider account status for the selector (F2-06/F2-10).
@@ -158,7 +159,10 @@ export default function App() {
     }
   };
 
-  const pill = ORB_PILL[conversation.orb];
+  // Dev-only preview of the orb states without a backend: /?orb=thinking
+  const forcedOrb = import.meta.env.DEV ? new URLSearchParams(window.location.search).get("orb") : null;
+  const orb = forcedOrb && forcedOrb in ORB_PILL ? (forcedOrb as OrbState) : conversation.orb;
+  const pill = ORB_PILL[orb];
   const currentProviderStatus = providersStatus?.[provider] ?? null;
   const providerNeedsLogin = currentProviderStatus !== null && !currentProviderStatus.logged_in;
 
@@ -203,7 +207,10 @@ export default function App() {
           </span>
         </div>
 
-        <AccountSelector onSelect={handleSelectProvider} selected={provider} status={providersStatus} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <AccountSelector onSelect={handleSelectProvider} selected={provider} status={providersStatus} />
+          <HeaderButtons />
+        </div>
       </header>
 
       {connection !== "open" && (
@@ -247,7 +254,7 @@ export default function App() {
         <SystemPanel provider={provider} providerStatus={currentProviderStatus} />
 
         <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
-          <Orb state={conversation.orb} />
+          <Orb state={orb} />
           <div style={{ fontFamily: "var(--jg-font-display)", fontWeight: 600, fontSize: 18, letterSpacing: "0.4em", color: pill.color }}>
             {pill.label}
           </div>

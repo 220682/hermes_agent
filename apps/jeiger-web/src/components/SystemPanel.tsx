@@ -33,7 +33,7 @@ export function SystemPanel({ provider, providerStatus }: SystemPanelProps) {
   const loggedIn = providerStatus?.logged_in ?? false;
 
   return (
-    <div style={{ width: 260, display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={panelStyle}>
         <div style={{ fontFamily: "var(--jg-font-display)", fontSize: 11, letterSpacing: "0.26em", color: "var(--jg-red-light)" }}>
           SISTEMA

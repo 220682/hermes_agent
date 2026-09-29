@@ -19,6 +19,8 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    port: 5173,
+    strictPort: true,
     proxy: {
       // Same-origin from the browser's point of view: no CORS needed, and the
       // WS upgrade for /api/ws carries the same ?token= query param either way

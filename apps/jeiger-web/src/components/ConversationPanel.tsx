@@ -10,7 +10,8 @@ export function ConversationPanel({ state }: ConversationPanelProps) {
   return (
     <div
       style={{
-        width: 340,
+        width: 380,
+        flexShrink: 0,
         display: "flex",
         flexDirection: "column",
         gap: 12,
