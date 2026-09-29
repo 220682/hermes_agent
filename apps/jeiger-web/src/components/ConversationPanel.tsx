@@ -1,4 +1,7 @@
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+
 import type { ConversationState } from "@/conversation/orbState";
+import { isPinnedToBottom } from "@/scrollFollow";
 
 export interface ConversationPanelProps {
   state: ConversationState;
@@ -7,8 +10,50 @@ export interface ConversationPanelProps {
 /** design.md: mensajes de usuario/JEIGER; "pensando" muestra puntos animados; "respondiendo"
  * muestra el texto llegando con cursor. */
 export function ConversationPanel({ state }: ConversationPanelProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pinnedRef = useRef(true);
+  const [away, setAway] = useState(false);
+
+  // F3-18: follow new text only while the user is at the end; scrolling up to read must not be undone.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+
+    if (el && pinnedRef.current) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [state.transcript, state.draftAssistantText, state.orb, state.errorMessage]);
+
+  // A new conversation starts at the top of an empty panel, pinned again.
+  useEffect(() => {
+    if (state.transcript.length === 0) {
+      pinnedRef.current = true;
+      setAway(false);
+    }
+  }, [state.transcript.length]);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+
+    if (el) {
+      pinnedRef.current = isPinnedToBottom(el);
+      setAway(!pinnedRef.current);
+    }
+  };
+
+  const jumpToEnd = () => {
+    const el = scrollRef.current;
+
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      pinnedRef.current = true;
+      setAway(false);
+    }
+  };
+
   return (
     <div
+      onScroll={handleScroll}
+      ref={scrollRef}
       style={{
         width: 380,
         minHeight: 0,
@@ -94,6 +139,28 @@ export function ConversationPanel({ state }: ConversationPanelProps) {
           <strong>Error: </strong>
           {state.errorMessage} Puedes escribir de nuevo.
         </div>
+      )}
+
+      {away && (
+        <button
+          onClick={jumpToEnd}
+          style={{
+            position: "sticky",
+            bottom: 0,
+            alignSelf: "center",
+            marginTop: "auto",
+            minHeight: 36,
+            padding: "0 14px",
+            color: "var(--jg-red-pale)",
+            fontSize: 13,
+            background: "rgba(12,6,7,0.92)",
+            border: "1px solid var(--jg-red-light)",
+            borderRadius: 999,
+          }}
+          type="button"
+        >
+          Ir al final
+        </button>
       )}
     </div>
   );
