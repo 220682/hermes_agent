@@ -15,7 +15,7 @@ import { fetchProvidersStatus, type ProvidersStatus, ProvidersStatusError } from
 import { recoverSession, type SessionHandle } from "@/sessionRecovery";
 import { readStoredSession, sessionToStore, writeStoredSession } from "@/storedSession";
 import { HEADSET_MODE_LINE, readHeadset, reopenDelayMs, writeHeadset } from "@/voice/echoControl";
-import { HEADSET_LINE, isFloorTooHigh, measureNoiseFloor, voiceLevelFor } from "@/voice/noiseGate";
+import { describeGate, isFloorTooHigh, measureNoiseFloor, NOISE_GATE_LINE, voiceLevelFor } from "@/voice/noiseGate";
 import type { OrbAudioDriver } from "@/voice/orbAudio";
 import { readSilenceMs, writeSilenceMs } from "@/voice/silence";
 import { decideSpaceAction } from "@/voice/spaceKey";
@@ -589,6 +589,7 @@ export default function App() {
     },
     silenceMs: usesSilenceDetection(voiceMode) ? silenceMs : null,
     voiceLevel: micVoiceLevel,
+    noiseGateOn: ignoreNoise,
     onLevel: (level) => {
       if (levelRef.current) {
         levelRef.current.style.transform = `scaleX(${level})`;
@@ -866,7 +867,12 @@ export default function App() {
 
       <div role="note" style={{ flexShrink: 0, fontSize: 12, color: "var(--jg-text-secondary)" }}>
         {HEADSET_MODE_LINE[headset ? "on" : "off"]}
-        {ignoreNoise && <div>{HEADSET_LINE}</div>}
+        {ignoreNoise && (
+          <div>
+            {NOISE_GATE_LINE}
+            {noiseFloor !== null && ` ${describeGate(noiseFloor)}`}
+          </div>
+        )}
       </div>
 
       <Composer

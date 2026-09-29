@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { startLevelMeter } from "./levelMeter";
 import { pickRecorderMime, transcribeBlob } from "./localTranscribe";
 import { type AudioInput, closeStream, listAudioInputs, openMic } from "./micStream";
+import { gatedRecordingExpired } from "./noiseGate";
 import { BASE_VOICE_LEVEL, initialSilenceState, silenceTimerDue, stepSilence } from "./silence";
 import {
   chooseSttEngine,
@@ -38,6 +39,8 @@ export interface VoiceInputOptions {
   onEmpty?: () => boolean;
   /** F3-22: JEIGER's last spoken reply; a transcript that mostly repeats it is its own echo. */
   lastSpoken?: () => string;
+  /** F3-24: the noise gate is on, so a recording without a closing silence is cut short. */
+  noiseGateOn?: boolean;
 }
 
 function readSavedDevice(): string {
@@ -48,7 +51,7 @@ function readSavedDevice(): string {
   }
 }
 
-export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel = BASE_VOICE_LEVEL, onEmpty, lastSpoken }: VoiceInputOptions) {
+export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel = BASE_VOICE_LEVEL, onEmpty, lastSpoken, noiseGateOn = false }: VoiceInputOptions) {
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [engine, setEngine] = useState<SttEngine | null>(null);
   const [issue, setIssue] = useState<VoiceIssueCode | null>(null);
@@ -63,9 +66,9 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
   const [preference, setPreferenceState] = useState<SttPreference>(() => readSttPreference());
   const discardRef = useRef(false);
   const frameRef = useRef<((level: number) => void) | null>(null);
-  const cbRef = useRef({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel, onEmpty, lastSpoken });
+  const cbRef = useRef({ onPartialText, onFinalText, onLevel, silenceMs, voiceLevel, onEmpty, lastSpoken, noiseGateOn });
 
-  cbRef.current = { onPartialText, onFinalText, onLevel, silenceMs, voiceLevel, onEmpty, lastSpoken };
+  cbRef.current = { onPartialText, onFinalText, onLevel, silenceMs, voiceLevel, onEmpty, lastSpoken, noiseGateOn };
 
   const reportEmpty = useCallback(() => {
     if (!cbRef.current.onEmpty?.()) {
@@ -252,9 +255,17 @@ export function useVoiceInput({ onPartialText, onFinalText, onLevel, silenceMs, 
       // F3-15: the level meter's frames decide when the pause is long enough to stop and transcribe.
       let silence = initialSilenceState;
       let tally = initialVoiceTally;
+      const startedAt = performance.now();
 
       frameRef.current = (level) => {
         tally = stepVoiceTally(tally, { level, now: performance.now() }, cbRef.current.voiceLevel);
+
+        // F3-24: constant sound never leaves a closing silence; stop and let the minimum-voice check judge.
+        if (gatedRecordingExpired(startedAt, performance.now(), cbRef.current.noiseGateOn) && recorder.state === "recording") {
+          recorder.stop();
+
+          return;
+        }
 
         const limit = cbRef.current.silenceMs;
 

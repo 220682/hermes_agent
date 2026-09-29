@@ -2,7 +2,7 @@ import type { RefObject } from "react";
 
 import { HEADSET_MODE_LINE } from "@/voice/echoControl";
 import type { AudioInput } from "@/voice/micStream";
-import { HEADSET_LINE } from "@/voice/noiseGate";
+import { NOISE_GATE_LINE } from "@/voice/noiseGate";
 import { SILENCE_OPTIONS_MS } from "@/voice/silence";
 import { offersLocalSwitch, PRIVACY_NOTICE, showsMicSelector, STT_PREFERENCE_LABEL, type SttEngine, type SttPreference } from "@/voice/sttEngine";
 import type { VoiceStatus } from "@/voice/useVoiceInput";
@@ -251,7 +251,7 @@ export function VoiceStrip({
           background: ignoreNoise ? "rgba(220,38,38,0.35)" : "transparent",
           opacity: engine === "web-speech" ? 0.5 : 1,
         }}
-        title={engine === "web-speech" ? "Solo con reconocimiento local. " + HEADSET_LINE : HEADSET_LINE}
+        title={engine === "web-speech" ? "Solo con reconocimiento local. " + NOISE_GATE_LINE : NOISE_GATE_LINE}
         type="button"
       >
         {measuringNoise ? "Midiendo ruido…" : ignoreNoise ? "Ignorando sonido del sistema" : "Ignorar sonido del sistema"}

@@ -1,6 +1,6 @@
-/** F3-17: "ignore system sound". A browser cannot exclude other apps' audio; this is a level
+/** F3-17/F3-24: "ignore system sound". A browser cannot exclude other apps' audio; this is a level
  * heuristic: measure the background for a second, then only levels well above it count as voice.
- * With loud music on speakers the reliable fix is a headset. */
+ * It helps with constant noise only; against music or video the fix is a headset. */
 
 import { startLevelMeter } from "./levelMeter";
 import { openMic } from "./micStream";
@@ -13,8 +13,22 @@ export const GATE_MIN_LEVEL = BASE_VOICE_LEVEL * 1.5;
 /** Above this floor the required voice level (floor x margin) approaches normal speech loudness. */
 export const FLOOR_TOO_HIGH = 0.15;
 
-export const HEADSET_LINE =
-  "Ignorar sonido del sistema es una heurística (solo con reconocimiento local): con música alta y parlantes, lo fiable son los auriculares.";
+/** With the gate on, a recording that goes this long without a closing silence is stopped (F3-24). */
+export const GATE_MAX_RECORDING_MS = 12_000;
+
+export const NOISE_GATE_LINE = "Ayuda con ruido de fondo constante; no separa música ni vídeo. Para eso usa auriculares.";
+
+/** The measured background and the level voice must now reach, as the panel shows them. */
+export function describeGate(floor: number): string {
+  const pct = (value: number) => `${Math.round(value * 100)} %`;
+
+  return `Piso de ruido medido: ${pct(floor)}. Nivel exigido para contar como voz: ${pct(voiceLevelFor(floor))}.`;
+}
+
+/** Has a gated recording run past its cap? Without the gate the normal 30 s limit applies elsewhere. */
+export function gatedRecordingExpired(startedAt: number, now: number, gateOn: boolean): boolean {
+  return gateOn && now - startedAt >= GATE_MAX_RECORDING_MS;
+}
 
 /** Robust floor: the 90th percentile of the measured levels, so a single spike does not set it. */
 export function estimateFloor(levels: number[]): number {
