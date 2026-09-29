@@ -246,3 +246,13 @@ Backend de F2 arrancando y verificado (F2-01, y P-03 para la ruta nueva). Falta 
 - Riesgo: la voz mínima de 400 ms sobre 0,06 puede descartar un habla muy baja con micrófono de poca ganancia (motor local); si ocurre, bajar `MIN_VOICE_MS` o el umbral.
 - Riesgo: el corte por voz abre un segundo `getUserMedia` mientras habla JEIGER; con Web Speech el hook cierra ese flujo antes de reabrir el suyo.
 - Retomar: `cd .worktrees/local-worker-3/apps/jeiger-web && npm run check`.
+
+
+### Handoff F3 Tanda I (2026-09-29)
+- Conforme: F3-25, F3-26 (E1..E5), F3-27, y por evidencia real F2-07, F2-13, F3-19, F3-21, F3-22.
+- Observado: F3-23 (falta modo Auriculares/corte por voz y eco acústico real), F3-14 (pestaña oculta 5 min), F3-20 (Nueva conversación), F3-24 (puerta de ruido con ruido constante). El "sonido mezclado" no se reprodujo con micrófono simulado.
+- Código: rama `local-worker-3`, commit `f30fef4f95` (botón "Ir al final" en su propia fila; fase del bucle cuenta el TTS en cola). `npm run check` verde (126 tests).
+- Decisión pendiente del Responsable: la guardia de eco descarta preguntas legítimas que repiten palabras de la respuesta (propuesta: racha contigua >= 80 %).
+- Pedir al Responsable una prueba con altavoces reales (sin auriculares), música del sistema de fondo y con Auriculares; el arnés no puede simularlas.
+- Cuota de turnos reales agotada (10/10) en esta tanda; para repetir E2..E5: `node f3-e2e-harness.mjs E2|E3|E4 <n>` desde una carpeta con `playwright` y los WAV (ver cabecera del arnés).
+- Retomar: `cd .worktrees/local-worker-3/apps/jeiger-web && npm run check`.

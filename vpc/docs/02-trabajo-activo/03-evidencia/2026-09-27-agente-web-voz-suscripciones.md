@@ -434,3 +434,24 @@ Commits en `local-worker-3` (sin push): `67ec6e88d4` (F3-14), `4cf34b5a5c` (F3-1
 - F3-23: `echoControl.ts` (1200/300 ms, `stepBargeIn` 300 ms), `useBargeIn.ts` (solo mide nivel), `TtsPlayer.isBusy`/`onBusy`, botón "Auriculares" y línea explicativa. Prueba de `handleInterrupt`: `TtsPlayer.stop()` con frases en cola vacía cola y deja `isBusy` en falso (test).
 - F3-24: `GATE_MAX_RECORDING_MS = 12 s`, `describeGate`, `NOISE_GATE_LINE` honesto.
 - Procedimientos manuales: (a) Autónomo sin hablar 30 s: no responde ni sale; a los 6 vacíos avisa y se detiene. (b) Sin auriculares, TTS activo: no se responde a sí mismo; reabre ~1,2 s tras terminar. (c) Con auriculares: reabre a ~0,3 s; hablar encima 0,3 s corta y escucha. (d) Esc, Espacio y Detener cortan en ambos casos. (e) Puerta activa con música: a los 12 s se detiene y muestra piso/nivel.
+
+
+## F3 Tanda I: verificación con navegador real (F3-25..F3-27)
+
+Arnés: `03-evidencia/f3-e2e-harness.mjs` (Playwright + Edge instalado, micrófono simulado con WAV de `edge-tts` es-MX-JorgeNeural + 60 s de silencio, STT local Whisper `base`, TTS edge). Instrumenta `MediaRecorder`, `AudioBufferSourceNode`, `getUserMedia`, `fetch /api/audio/transcribe` y los frames WS `prompt.submit`. Playwright solo en el scratchpad; el repo no cambió de dependencias. Limitación del simulador: Edge reinicia el WAV en cada apertura del micrófono, así que cada reapertura oye otra vez la primera frase (un E2/E3 con dos turnos de voz distintos no es posible). Turnos reales de Claude usados: 10 de 10 (uno extra, E3 iteración 1, y otro por un error del arnés; ver abajo).
+
+Resultados por iteración (código sin cambios de lógica de voz entre iteraciones; solo cambió F3-27 y la etiqueta de fase):
+
+| Iteración | E1 silencio | E2 una frase | E3 dos frases seguidas | E4 corte (Esc y botón) | E5 recarga | E6 (F3-27) |
+|---|---|---|---|---|---|---|
+| 1 (commit `851052abde`) | Conforme: 0 envíos en 45 s | Conforme: envió exactamente "¿Cuál es la capital de Perú?"; TTS sonó 2,5 s; nunca hubo grabador con TTS activo; reapertura 1,29 s tras el fin del audio; máx. 1 grabador | No concluyente con pausa de 3 s (el simulador reinició el archivo: la 2.ª grabación repitió la 1.ª frase y se envió otra vez; sin solape ni mezcla) | Arnés falló al hacer clic (selector) | n/a | n/a |
+| 2 (arnés corregido, mismo código) | Conforme | Conforme (idem) | Conforme: dos frases con 0,3 s de pausa llegaron como UN mensaje idéntico a lo dicho; sin duplicado; reapertura 1,26 s tras el TTS | Conforme: Esc con TTS sonando dio `tts.stop`, orbe en reposo, sin reapertura, sin audio a los 3 s; botón INTERRUMPIR igual | Conforme (ver F3-19) | Fallo con el botón sticky del código anterior no medido; ver iteración 3 |
+| 3 (commit `f30fef4f95`, F3-27) | Conforme: 6 grabaciones vacías de 30 s y luego el aviso, 0 envíos | (no repetido: sin cuota de turnos) | (no repetido) | (no repetido) | (no repetido) | Conforme: 3 posiciones de desplazamiento, botón dentro del panel, esquina inferior derecha, 0 solapes con el texto |
+
+Hallazgos:
+- **El "sonido mezclado" no se reprodujo**: con micrófono simulado la transcripción fue idéntica a la frase (Whisper `base`). Lo que el Responsable oye no sale de la reapertura escalonada ni de dos grabadores (máx. 1 abierto; 0 solapes con el TTS). Hipótesis restante, no probable aquí: eco acústico real altavoz→micrófono, música del sistema o un micrófono real con mucho ruido. Queda **Observado**.
+- Sospechas: (a) sin solape grabador/TTS en E2/E3; (b) no aplica, `MediaRecorder` capturó solo el dispositivo; (c) una frase con pausa > 2 s se corta en dos envíos (es el diseño del silencio de 2 s); en E3 con pausa corta se envió entera; (d) máx. 1 grabador abierto; (e) latencia STT medida: 1,1 s (frase de 2,5 s), 1,4 s a 2,0 s (frase de 8 s con 5 s de audio útil); el 3,5 s de la medición manual no se reprodujo.
+- **Falso positivo de la guardia de eco** (`voiceGuard.isEcho`): tras responder "La capital de Perú es Lima.", la pregunta legítima "¿Cuál es la capital de Perú?" comparte 5 de 6 palabras y se descarta como eco. Se dejó sin cambiar (relajarla reduce la protección contra el eco real, que no se puede probar aquí); propuesta: exigir una racha contigua de palabras >= 80 % en lugar de bolsa de palabras. Decisión del Responsable.
+- Etiqueta "Escuchando" durante ~1,3 s entre el fin del texto y el primer audio del TTS (el micrófono seguía cerrado): corregido en `f30fef4f95` (`loopPhase` cuenta `speech.busy`).
+- La respuesta interrumpida por Esc queda guardada y se restaura tras recargar (con la parte ya escrita).
+- Capturas: `capturas/f3-27-ir-al-final.png`. Salidas JSON del arnés en el scratchpad (`e2e/out/*.timeline.json`), no en el repo.
