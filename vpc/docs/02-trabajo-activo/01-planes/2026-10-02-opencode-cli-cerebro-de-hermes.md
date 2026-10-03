@@ -2,7 +2,7 @@
 
 ## Identificacion y estado
 
-Nombre: **Plan - OpenCode CLI como cerebro de Hermes**. Fecha: 2026-10-02. Estado: `Planificando`.
+Nombre: **Plan - OpenCode CLI como cerebro de Hermes**. Fecha: 2026-10-02. Estado: `Implementando` (Gate 1 aprobado el 2026-10-02).
 
 Autorizacion previa que este hereda (2026-10-02, en la sesion del Orquestador): el Responsable humano autorizo corregir `~/.config/opencode/opencode.jsonc` (el agente `general` apuntaba a `opencode-go/qwen3.8-plus`, un modelo inexistente que hacia fallar toda delegacion) y agregar los agentes invocables `worker-flash`, `worker-plus` y `auditor`. Ese archivo es del entorno, no del repositorio.
 
@@ -137,7 +137,9 @@ Estados: `Sin verificar` / `Conforme` / `Observado` / `No aplica`. La evidencia 
 
 ### Estado de aprobacion
 
-Gate 1: pendiente.
+**Gate 1: APROBADO el 2026-10-02** por el Responsable humano ("dale a todo"), con las cinco decisiones D-06 a D-10 aceptadas y la autorizacion para commitear los 4 huerfanos de `vpc/` y pushear `planificacion`. Con esta aprobacion queda autorizada toda la implementacion de F1 a F3 sin pedir permiso paso a paso; el unico punto de parada restante es el Gate 2.
+
+Ningun rol hace merge a `main`, push de ramas de trabajo ni borrado de archivos sin una autorizacion explicita posterior.
 
 ### Items funcionales
 
@@ -221,11 +223,13 @@ No aplica: el plan no anade endpoints nuevos (reutiliza `providers_status.py` ex
 
 ## Decisiones que necesita el Responsable humano en el Gate 1
 
-1. **D-06. Reutilizar `local-worker-opencode` como rama del Worker**, en vez de crear una rama nueva `<entorno>-worker-N`. La rama ya existe, ya tiene worktree, arbol limpio y contiene el borrador. La desviacion del nombre canonico se aprueba aqui.
-2. **D-07. Traslado del borrador:** rebase de los 12 commits sobre `local-worker-3` (recomendado: preserva la historia y es un solo paso) vs cherry-pick commit a commit (mas seguro ante conflictos pero mas lento). El Worker F1-A decide y documenta; el Responsable humano confirma en el Gate 1 que acepta la desviacion.
-3. **D-08. Base del plan = `local-worker-3`** (decision D-01 ya tomada). El Responsable humano confirma que el plan incluye todo el trabajo anterior (cerebro + app web + voz).
-4. **D-09. `default_aux_model`:** si se cambia de `claude-haiku-4-5-20251001` a otro modelo, cual. Si se mantiene, justificar por que un modelo de Anthropic es el auxiliar de OpenCode.
-5. **D-10. Push de ramas:** bloqueado hasta autorizacion explicita. El Responsable humano confirma que el Orquestador y los Workers no pushean sin autorizacion.
+**Resueltas el 2026-10-02 en el Gate 1** (el Responsable humano aprobo las cinco con "dale a todo"):
+
+1. **D-06. Reutilizar `local-worker-opencode` como rama del Worker**, en vez de crear una rama nueva `<entorno>-worker-N`. **APROBADA**, incluida la desviacion del nombre canonico.
+2. **D-07. Traslado del borrador:** rebase (recomendado) o cherry-pick commit a commit. **APROBADA la delegacion al Worker F1-A**, que elige y lo deja documentado en el plan y en el handoff.
+3. **D-08. Base del plan = `local-worker-3`**. **APROBADA**: el plan incluye todo el trabajo anterior (cerebro + app web + voz).
+4. **D-09. `default_aux_model`:** hoy es `claude-haiku-4-5-20251001`, un modelo de Anthropic dentro de un plugin de OpenCode. **APROBADO que el Worker F1-B lo revise** y lo deje como esta o lo cambie a un modelo de OpenCode; si el cambio tiene consecuencia para el usuario, se propone a este Responsable en el Gate 2.
+5. **D-10. Push de ramas:** **APROBADO que siga bloqueado** para el Orquestador y los Workers. Excepcion ya otorgada en este mismo Gate: commitear los 4 huerfanos de `vpc/` y pushear `planificacion`.
 
 ## Registro de decisiones
 
@@ -236,11 +240,11 @@ No aplica: el plan no anade endpoints nuevos (reutiliza `providers_status.py` ex
 | 2026-10-02 | D-03: el plan `2026-09-27-agente-web-voz-suscripciones` sigue abierto en paralelo (su Gate 2 sigue pendiente); este plan no lo toca ni lo cierra | Responsable humano |
 | 2026-10-02 | D-04: niveles de Worker y esfuerzo: Planner Base/Medio; Workers Economico/Medio y Base/Medio; Auditor Base/Medio. Ninguna fase usa modelo Superior ni esfuerzo Alto | Responsable humano |
 | 2026-10-02 | D-05: el Orquestador NO implementa; el plan no autoriza ninguna excepcion | Responsable humano |
-| 2026-10-02 | D-06 (pendiente Gate 1): reutilizar `local-worker-opencode` como rama del Worker, desviacion del nombre canonico | Planner (por aprobar) |
-| 2026-10-02 | D-07 (pendiente Gate 1): traslado del borrador por rebase (recomendado) o cherry-pick; el Worker decide y documenta | Planner (por aprobar) |
-| 2026-10-02 | D-08 (pendiente Gate 1): base del plan = `local-worker-3` | Planner (por aprobar) |
-| 2026-10-02 | D-09 (pendiente Gate 1): `default_aux_model` se revisa en F1-B; si se cambia, el Responsable humano elige | Planner (por aprobar) |
-| 2026-10-02 | D-10 (pendiente Gate 1): push de ramas bloqueado hasta autorizacion explicita | Planner (por aprobar) |
+| 2026-10-02 | D-06 **aprobada Gate 1**: reutilizar `local-worker-opencode` como rama del Worker, incluida la desviacion del nombre canonico | Responsable humano |
+| 2026-10-02 | D-07 **aprobada Gate 1**: el Worker F1-A decide entre rebase (recomendado) y cherry-pick, y lo documenta | Responsable humano |
+| 2026-10-02 | D-08 **aprobada Gate 1**: base del plan = `local-worker-3`, incluye cerebro + app web + voz | Responsable humano |
+| 2026-10-02 | D-09 **aprobada Gate 1**: el Worker F1-B revisa `default_aux_model`; si el cambio tiene consecuencia para el usuario, va al Gate 2 | Responsable humano |
+| 2026-10-02 | D-10 **aprobada Gate 1**: push de ramas bloqueado; excepcion otorgada en este Gate para commitear los 4 huerfanos de `vpc/` y pushear `planificacion` | Responsable humano |
 | 2026-10-02 | D-11: la tanda F3 la ejecuta el rol **Documentador** (`opencode-go/qwen3.8-flash`, Medio) y no un Worker; su alcance son docs, flujo de negocio y registro de huerfanos. El estandar no define funciones para el Documentador, solo su nivel de modelo (`09-orquestacion-y-modelos.md:18`), asi que el alcance queda fijo en esta tabla | Orquestador |
 | 2026-10-02 | D-12: el **Agente Git no se instancia** en este plan. Sus funciones (`09-orquestacion-y-modelos.md:171-184`) son comandos git mecanicos y exige verificador para merge a `main`, `push --force` y `branch -D`. Aqui el commit lo hace el Worker en su propia rama (`02-roles-y-delegacion.md` §Worker), el push esta bloqueado (D-10) y el merge solo ocurre en Gate 2, asi que no queda trabajo mecanico para ese rol | Orquestador |
 
