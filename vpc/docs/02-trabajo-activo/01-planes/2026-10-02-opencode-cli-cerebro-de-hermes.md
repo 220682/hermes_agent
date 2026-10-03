@@ -2,13 +2,13 @@
 
 ## Identificacion y estado
 
-Nombre: **Plan - OpenCode CLI como cerebro de Hermes**. Fecha: 2026-10-02. Estado: `Implementando` (Gate 1 aprobado el 2026-10-02).
+Nombre: **Plan - OpenCode CLI como cerebro de Hermes**. Fecha: 2026-10-02. Estado: `Implementando` (Gate 1 aprobado el 2026-10-02; F1, F2 y F3 cerradas el mismo dia; pendiente Auditoria y Gate 2).
 
 Autorizacion previa que este hereda (2026-10-02, en la sesion del Orquestador): el Responsable humano autorizo corregir `~/.config/opencode/opencode.jsonc` (el agente `general` apuntaba a `opencode-go/qwen3.8-plus`, un modelo inexistente que hacia fallar toda delegacion) y agregar los agentes invocables `worker-flash`, `worker-plus` y `auditor`. Ese archivo es del entorno, no del repositorio.
 
 - Tema: `opencode-cli-cerebro-de-hermes`
 - Fecha: 2026-10-02
-- Estado del plan: `Planificando`
+- Estado del plan: `F1-F3 cerradas, pendiente Auditoria y Gate 2`
 - Entorno: `local` (Windows 11, repo en `D:\VICTOR\CLAUDE CODE\hermes_agent`)
 
 ## Spec / SDD aprobado
@@ -60,10 +60,10 @@ Cada rol corre en su **propia sesion** de opencode CLI (`opencode run --model <m
 | Orquestador | Sesion interactiva de opencode del Responsable humano | `planificacion` | N/A | Activo |
 | Planner | `opencode run --model opencode-go/qwen3.7-plus --dir <raiz del repo>` | `planificacion` | N/A | Plan entregado (2026-10-02) |
 | Worker F1-A (traslado) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
-| Worker F1-B (revision plugin) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
-| Worker F2-A (nucleo y superficie) | `opencode run --model opencode-go/qwen3.7-plus --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
-| Worker F2-B (verificacion real) | `opencode run --model opencode-go/qwen3.7-plus --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
-| Documentador F3 (documentacion y limpieza) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` (codigo) / `planificacion` (docs del flujo) | `.worktrees/local-worker-opencode` | Pendiente |
+| Worker F1-B (revision plugin) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Cerrada (2026-10-02) |
+| Worker F2-A (nucleo y superficie) | `opencode run --model opencode-go/qwen3.7-plus --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Cerrada (2026-10-02) |
+| Worker F2-B (verificacion real) | `opencode run --model opencode-go/qwen3.7-plus --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Cerrada (2026-10-02) |
+| Documentador F3 (documentacion y limpieza) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` (codigo) / `planificacion` (docs del flujo) | `.worktrees/local-worker-opencode` | Cerrada (2026-10-02) |
 | Agente Git | â€” | â€” | â€” | **No usado en este plan** (decision D-12) |
 | Auditor | `opencode run --model opencode-go/qwen3.7-plus --dir <raiz del repo>` | `planificacion` | N/A | Pendiente |
 
@@ -167,9 +167,9 @@ Ningun rol hace merge a `main`, push de ramas de trabajo ni borrado de archivos 
 | F2-B-03 | F2-B | Suite de pruebas afectada verde: `tests/agent/test_cli_brain.py`, `tests/plugins/test_cli_brain_providers.py`, `tests/plugins/model-providers/test_opencode_protocol.py` con `scripts/run_tests.sh` | Salida del runner | Sin verificar |
 | F2-B-04 | F2-B | Sin secretos en el diff: ningun token, clave o credencial en `git diff local-worker-3..local-worker-opencode` | Busqueda de patrones | Sin verificar |
 | F2-B-05 | F2-B | Limites de uso de OpenCode documentados: lo que se sabe (multi-proveedor, el consumo depende del proveedor configurado en OpenCode) y lo no verificado se declara | Seccion en la evidencia | Sin verificar |
-| F3-01 | F3 | Flujo de negocio `01-cuentas-y-proveedores.md` actualizado con OpenCode: tercer proveedor, login propio del CLI, multi-proveedor, consumo segun la config de OpenCode | Contenido del archivo | Sin verificar |
-| F3-02 | F3 | Regla de negocio actualizada: OpenCode en la misma categoria que claude-cli y cursor (login propio, Hermes como arnes, sin guardar credenciales) | Contenido del archivo | Sin verificar |
-| F3-03 | F3 | Huerfanos conocidos registrados: 4 rutas untracked de `vpc/` y commits `debug(...)` del trabajo heredado (si sobreviven al rebase) | Apartado del plan | Sin verificar |
+| F3-01 | F3 | Flujo de negocio `01-cuentas-y-proveedores.md` actualizado con OpenCode: tercer proveedor, login propio del CLI, multi-proveedor, consumo segun la config de OpenCode | Contenido del archivo | Conforme (Documentador F3) |
+| F3-02 | F3 | Regla de negocio actualizada: OpenCode en la misma categoria que claude-cli y cursor (login propio, Hermes como arnes, sin guardar credenciales) | Contenido del archivo | Conforme (Documentador F3) |
+| F3-03 | F3 | Huerfanos conocidos registrados: 4 rutas untracked de `vpc/` y commits `debug(...)` del trabajo heredado (si sobreviven al rebase) | Apartado del plan | Conforme (Documentador F3) |
 | R-01 | T | `hermes doctor` sin errores nuevos relacionados con opencode-cli | Salida del comando | Sin verificar |
 | T-01 | T | Sin secretos: ningun token de OpenCode, OpenRouter, Anthropic ni OpenAI en el diff, los registros ni la salida de los comandos | Busqueda de patrones | Sin verificar |
 
@@ -274,15 +274,18 @@ Se llena en el momento en que ocurre cada hallazgo, no al cerrar. "Ninguna" si n
 
 Se llena en el momento en que ocurre cada hallazgo. "Ninguna" si no aplica.
 
-1. **Candidata, pendiente de verificar en F1-B (no es regla todavia):** `local-worker-3` fija `HERMES_CLIENT_STREAMS = True` en `CliBrainClient`, y `agent/turn_api_call._should_stream` lo consulta para permitir streaming. `opencode-cli` usa protocolo **non-live**: un proceso por turno, `stdin=DEVNULL` y `break` limpio al terminar. Si al verificarlo aparece que un cerebro non-live no puedeconvivir con `HERMES_CLIENT_STREAMS = True`, la regla que se escriba va al flujo `04-flujos-de-negocio/01-cuentas-y-proveedores.md` y se consulta al Responsable humano antes de fijarla, por ser una regla del sistema y no una opinion de esta tarea.
+1. **2026-10-02 - Login propio de cada CLI, ampliado a OpenCode.** El cerebro de OpenCode es el CLI oficial (`opencode`) con el login del propio usuario, mantenido dentro de OpenCode (`opencode auth login`); Hermes no lee ni guarda el token, y el consumo depende del proveedor o la cuenta configurados dentro de la propia instalacion de OpenCode, no de un nivel de plan de Hermes. Integrada en `vpc/docs/04-flujos-de-negocio/01-cuentas-y-proveedores.md` (Reglas 2, 3 y 4) por el Documentador F3. Ninguna otra regla de negocio se acordo en esta tarea.
+2. **Resolucion de la candidata anterior.** La coexistencia de un cerebro non-live (un proceso por turno, stdin DEVNULL) con `HERMES_CLIENT_STREAMS = True` paso a verificacion y se cerro en las tandas F1-B/F2 (dato verificado que llega a la tanda F3: las llamadas reales de humo con el protocolo non-live respondieron correctamente, y la condicion sigue intacta en la rama tal como se observa en `agent/cli_brain.py` de `local-worker-opencode`). No emerge una regla del sistema nueva y no se escribe nada en el flujo por ella.
 
 ## Carpetas/archivos huerfanos
 
-Se llena en el momento en que ocurre cada hallazgo. Los huerfanos conocidos a registrar:
+Se llena en el momento en que ocurre cada hallazgo. Estado actualizado por el Documentador F3 (2026-10-02):
 
-- 4 rutas untracked de `vpc/`: `vpc/docs/00-estandar-agentes/07-verificador-de-acciones.md`, `08-medicion-y-relevo.md`, `09-orquestacion-y-modelos.md`, `vpc/.claude/skills/seguir-flujo-de-planes/`. No se tocan ni se borran.
-- Commits `debug(...)` del trabajo heredado: `7c524af67e debug(providers): add logging to opencode-cli protocol` y `6544ef52bc refactor(opencode-cli): remove debug logging`. Si el rebase los conserva, quedan como historia; si se squashean, se limpian.
-- `agent/turn_api_call.py` NO tiene cambios heredados (verificado), pero el prompt inicial lo mencionaba como tocado por ambos lados. Queda registrado como hallazgo: solo `agent/cli_brain.py` tuvo conflicto real.
+- Las 4 rutas de `vpc/docs/00-estandar-agentes/07-verificador-de-acciones.md`, `08-medicion-y-relevo.md`, `09-orquestacion-y-modelos.md` y `vpc/.claude/skills/seguir-flujo-de-planes/` **dejan de ser huerfanos**: commiteadas en `planificacion` en el Gate 1 (commit `5181c6a733`, autorizado por D-10) y verificadas como tracked con `git ls-files`.
+- Commits `debug(...)` del trabajo heredado: **conservados como historia** tras el rebase, con hashes nuevos `4264de694d debug(providers): add logging to opencode-cli protocol` y `633b9b9120 refactor(opencode-cli): remove debug logging` (los antiguos `7c524af67e`/`6544ef52bc` quedan invalidados por el rebase). El codigo resultante quedó sin logging de debug (verificado en `protocol.py` de `5cf5e2378f`).
+- Archivos `.handoff-*.md` sin commitear en la raiz del worktree `.worktrees/local-worker-opencode` (`f1-a`, `f1-b`, `f2-a`, `f2-b`): son archivos de trabajo fuera del arbol por diseno (mejora de trabajo 2), no huerfanos a limpiar; se registran para que nadie los tome por commiteables.
+- Import muerto menor (2026-10-02, F3): `from typing import Any` sin uso en `plugins/model-providers/opencode-cli/protocol.py` del HEAD `5cf5e2378f`, remanente de la eliminacion del helper `_status`. Item menor reportado al Auditor; esta tanda no toca codigo (D-11).
+- `agent/turn_api_call.py` NO tiene cambios heredados (verificado), pero el prompt inicial lo mencionaba como tocado por ambos lados. Queda registrado como hallazgo: solo `agent/cli_brain.py` tuvo desviacion relevante.
 
 ## Informe de Auditoria
 
