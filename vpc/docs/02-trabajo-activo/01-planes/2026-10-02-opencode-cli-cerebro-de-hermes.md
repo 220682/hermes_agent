@@ -1,4 +1,4 @@
-# Plan — OpenCode CLI como cerebro de Hermes
+# Plan â€” OpenCode CLI como cerebro de Hermes
 
 ## Identificacion y estado
 
@@ -13,7 +13,7 @@ Autorizacion previa que este hereda (2026-10-02, en la sesion del Orquestador): 
 
 ## Spec / SDD aprobado
 
-Spec corto, derivado del plan `2026-09-27-agente-web-voz-suscripciones` (F1 Cerebro, aprobado en Gate 1 el 2026-09-28). El objetivo de este plan es añadir un tercer proveedor de cerebro CLI — OpenCode — a la misma categoria que `claude-cli` y `cursor`, ya implementados en F1. La Spec completa es la de ese plan, limitada a lo que aqui se declara como alcance.
+Spec corto, derivado del plan `2026-09-27-agente-web-voz-suscripciones` (F1 Cerebro, aprobado en Gate 1 el 2026-09-28). El objetivo de este plan es aÃ±adir un tercer proveedor de cerebro CLI â€” OpenCode â€” a la misma categoria que `claude-cli` y `cursor`, ya implementados en F1. La Spec completa es la de ese plan, limitada a lo que aqui se declara como alcance.
 
 ## Objetivo, alcance y no alcance
 
@@ -59,12 +59,12 @@ Cada rol corre en su **propia sesion** de opencode CLI (`opencode run --model <m
 |---|---|---|---|---|
 | Orquestador | Sesion interactiva de opencode del Responsable humano | `planificacion` | N/A | Activo |
 | Planner | `opencode run --model opencode-go/qwen3.7-plus --dir <raiz del repo>` | `planificacion` | N/A | Plan entregado (2026-10-02) |
-| Worker F1-A (traslado) | `opencode run --model opencode-go/qwen3.8-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
-| Worker F1-B (revision plugin) | `opencode run --model opencode-go/qwen3.8-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
+| Worker F1-A (traslado) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
+| Worker F1-B (revision plugin) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
 | Worker F2-A (nucleo y superficie) | `opencode run --model opencode-go/qwen3.7-plus --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
 | Worker F2-B (verificacion real) | `opencode run --model opencode-go/qwen3.7-plus --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
-| Documentador F3 (documentacion y limpieza) | `opencode run --model opencode-go/qwen3.8-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` (codigo) / `planificacion` (docs del flujo) | `.worktrees/local-worker-opencode` | Pendiente |
-| Agente Git | — | — | — | **No usado en este plan** (decision D-12) |
+| Documentador F3 (documentacion y limpieza) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` (codigo) / `planificacion` (docs del flujo) | `.worktrees/local-worker-opencode` | Pendiente |
+| Agente Git | â€” | â€” | â€” | **No usado en este plan** (decision D-12) |
 | Auditor | `opencode run --model opencode-go/qwen3.7-plus --dir <raiz del repo>` | `planificacion` | N/A | Pendiente |
 
 El `--dir` de cada tanda es su worktree: asi el brief, las pruebas y los comandos corren sobre la rama de la tanda, no sobre `planificacion`. La documentacion de proceso (flujo de negocio, apartados del plan) va a `planificacion`, que es la rama de los roles que no son Worker.
@@ -75,12 +75,12 @@ Los ids de modelo salen de `~/.config/opencode/opencode.jsonc` (`roles.planner.d
 
 | Fase/Tanda | Nivel | Esfuerzo | Modelo | Justificacion |
 |---|---|---|---|---|
-| F1-A (traslado) | Economico | Medio | `opencode-go/qwen3.8-flash` | Traslado mecanico de commits + resolucion de conflictos guiada |
-| F1-B (revision plugin) | Economico | Medio | `opencode-go/qwen3.8-flash` | Revision de codigo existente contra lista de riesgos ya acotada |
+| F1-A (traslado) | Economico | Medio | `opencode-go/glm-5.3-flash` | Traslado mecanico de commits + resolucion de conflictos guiada |
+| F1-B (revision plugin) | Economico | Medio | `opencode-go/glm-5.3-flash` | Revision de codigo existente contra lista de riesgos ya acotada |
 | F2-A (nucleo y superficie) | Base | Medio | `opencode-go/qwen3.7-plus` | Requiere analisis de la ampliacion generica de cli_brain.py e integracion con superficie existente |
 | F2-B (verificacion real) | Base | Medio | `opencode-go/qwen3.7-plus` | Llamada real, pruebas de regresion, verificacion de secretos |
-| F3 (documentacion) | Economico | Medio | `opencode-go/qwen3.8-flash` | Rol Documentador: la tanda es solo documentacion, flujo de negocio y registro de huerfanos. El estandar no define funciones para el Documentador, solo su nivel de modelo (`09-orquestacion-y-modelos.md:18`), asi que su alcance es el que el plan le asigna aqui |
-| Agente Git | Economico | Medio | `opencode-go/qwen3.8-flash` | No instanciado: ver D-12 |
+| F3 (documentacion) | Economico | Medio | `opencode-go/glm-5.3-flash` | Rol Documentador: la tanda es solo documentacion, flujo de negocio y registro de huerfanos. El estandar no define funciones para el Documentador, solo su nivel de modelo (`09-orquestacion-y-modelos.md:18`), asi que su alcance es el que el plan le asigna aqui |
+| Agente Git | Economico | Medio | `opencode-go/glm-5.3-flash` | No instanciado: ver D-12 |
 | Auditoria | Base | Medio | `opencode-go/qwen3.7-plus` | Revision integral |
 
 Ninguna fase usa modelo Superior ni esfuerzo Alto (decision D-04), asi que no hace falta pedir autorizacion de nivel.
@@ -145,10 +145,10 @@ Ningun rol hace merge a `main`, push de ramas de trabajo ni borrado de archivos 
 
 | ID | Fase | Item | Evidencia minima | Estado |
 |---|---|---|---|---|
-| F1-A-01 | F1-A | Traslado de los 12 commits sobre `local-worker-3` ejecutado (rebase o cherry-pick, segun la decision documentada en el brief); el arbol resultante contiene los 3 archivos del plugin, el test, y los cambios de `cli_brain.py` | `git log --oneline` mostrando los commits trasladados | Sin verificar |
-| F1-A-02 | F1-A | Conflicto en `agent/cli_brain.py` resuelto: el archivo compila, los tests existentes (`tests/agent/test_cli_brain.py`) pasan con `scripts/run_tests.sh` | Salida de los tests | Sin verificar |
-| F1-A-03 | F1-A | `agent/turn_api_call.py` sin cambios heredados (confirmado: el diff heredado es vacio para ese archivo) | `git diff` sobre el archivo | Sin verificar |
-| F1-A-04 | F1-A | Worktree `.worktrees/local-worker-opencode` limpio tras el traslado (`git status` sin conflictos ni archivos sin resolver) | Salida de `git status` | Sin verificar |
+| F1-A-01 | F1-A | Traslado de los 12 commits sobre `local-worker-3` ejecutado (rebase o cherry-pick, segun la decision documentada en el brief); el arbol resultante contiene los 3 archivos del plugin, el test, y los cambios de `cli_brain.py` | `git log --oneline` mostrando los commits trasladados | Conforme |
+| F1-A-02 | F1-A | Conflicto en `agent/cli_brain.py` resuelto: el archivo compila, los tests existentes (`tests/agent/test_cli_brain.py`) pasan con `scripts/run_tests.sh` | Salida de los tests | Conforme |
+| F1-A-03 | F1-A | `agent/turn_api_call.py` sin cambios heredados (confirmado: el diff heredado es vacio para ese archivo) | `git diff` sobre el archivo | Conforme |
+| F1-A-04 | F1-A | Worktree `.worktrees/local-worker-opencode` limpio tras el traslado (`git status` sin conflictos ni archivos sin resolver) | Salida de `git status` | Conforme |
 | F1-B-01 | F1-B | `plugin.yaml` nombre coherente: el campo `name` coincide con `NAME = "opencode-cli"` del `__init__.py` (hoy dice `opencode-profile`, inconsistente) | Contenido del archivo | Sin verificar |
 | F1-B-02 | F1-B | `default_aux_model` no es un modelo de otro proveedor sin justificacion (hoy es `claude-haiku-4-5-20251001`, que es de Anthropic, en un plugin de OpenCode); o se cambia a un modelo neutro/propio de OpenCode, o se documenta la justificacion | Contenido del archivo o decision documentada | Sin verificar |
 | F1-B-03 | F1-B | `scrub_env` no rompe el multi-proveedor que el usuario configuro en su config de OpenCode: las variables de billing de OpenRouter/Anthropic/OpenAI se retiran para que el CLI de OpenCode use su propia configuracion, no las del entorno de Hermes; se verifica que `OPENCODE` y `OPENCODE_PID` se retiran (evitan confusion del CLI) y que el resto del entorno se preserva | Test unitario + lectura del codigo | Sin verificar |
@@ -245,8 +245,11 @@ No aplica: el plan no anade endpoints nuevos (reutiliza `providers_status.py` ex
 | 2026-10-02 | D-08 **aprobada Gate 1**: base del plan = `local-worker-3`, incluye cerebro + app web + voz | Responsable humano |
 | 2026-10-02 | D-09 **aprobada Gate 1**: el Worker F1-B revisa `default_aux_model`; si el cambio tiene consecuencia para el usuario, va al Gate 2 | Responsable humano |
 | 2026-10-02 | D-10 **aprobada Gate 1**: push de ramas bloqueado; excepcion otorgada en este Gate para commitear los 4 huerfanos de `vpc/` y pushear `planificacion` | Responsable humano |
-| 2026-10-02 | D-11: la tanda F3 la ejecuta el rol **Documentador** (`opencode-go/qwen3.8-flash`, Medio) y no un Worker; su alcance son docs, flujo de negocio y registro de huerfanos. El estandar no define funciones para el Documentador, solo su nivel de modelo (`09-orquestacion-y-modelos.md:18`), asi que el alcance queda fijo en esta tabla | Orquestador |
-| 2026-10-02 | D-12: el **Agente Git no se instancia** en este plan. Sus funciones (`09-orquestacion-y-modelos.md:171-184`) son comandos git mecanicos y exige verificador para merge a `main`, `push --force` y `branch -D`. Aqui el commit lo hace el Worker en su propia rama (`02-roles-y-delegacion.md` §Worker), el push esta bloqueado (D-10) y el merge solo ocurre en Gate 2, asi que no queda trabajo mecanico para ese rol | Orquestador |
+| 2026-10-02 | D-11: la tanda F3 la ejecuta el rol **Documentador** (`opencode-go/glm-5.3-flash`, Medio) y no un Worker; su alcance son docs, flujo de negocio y registro de huerfanos. El estandar no define funciones para el Documentador, solo su nivel de modelo (`09-orquestacion-y-modelos.md:18`), asi que el alcance queda fijo en esta tabla | Orquestador |
+| 2026-10-02 | D-12: el **Agente Git no se instancia** en este plan. Sus funciones (`09-orquestacion-y-modelos.md:171-184`) son comandos git mecanicos y exige verificador para merge a `main`, `push --force` y `branch -D`. Aqui el commit lo hace el Worker en su propia rama (`02-roles-y-delegacion.md` Â§Worker), el push esta bloqueado (D-10) y el merge solo ocurre en Gate 2, asi que no queda trabajo mecanico para ese rol | Orquestador |
+| 2026-10-02 | D-13: **el Worker Economico pasa de `opencode-go/qwen3.8-flash` a `opencode-go/glm-5.3-flash`** (F1-B y F3). Medicion con tres tareas reales del repo —leer un archivo y contar metodos, ejecutar un comando git, leer `protocol.py` y responder dos preguntas—: glm-5.3-flash 14.6s de media frente a 20.7s de qwen3.8-flash. Ademas qwen3.8-flash fallo 1 de 3 con un error de forma (respondio sin ejecutar el comando). Los seis modelos medidos acertaron las tres tareas, asi que la diferencia medida es de velocidad, no de acierto | Responsable humano |
+| 2026-10-02 | D-14: **el rol Base se queda en `opencode-go/qwen3.7-plus`** (Workers F2-A y F2-B, Planner, Auditor). Se midieron `deepseek-v4-pro` (16.5s) y `glm-5.3` (17.7s) contra `qwen3.7-plus` (21.0s) leyendo codigo, pero un turno no distingue calidad en revision profunda, y ese rol audita 31 items de la Punch List y busca fallos en codigo ajeno. No se sube de familia sin un benchmark de revision real | Responsable humano |
+| 2026-10-02 | Nota de costo: el provider `opencode-go` es la suscripcion del Responsable humano y no hay precios por token verificables para el, asi que **la comparacion de D-13 y D-14 es de velocidad medida, no de costo medido**. Si se quiere decidir por costo, hace falta medir contra un provider con precios publicos (OpenRouter) en las mismas tareas | Orquestador |
 
 ## Enlaces a progreso y evidencia homonimos
 
@@ -258,13 +261,20 @@ No aplica: el plan no anade endpoints nuevos (reutiliza `providers_status.py` ex
 
 Se llena en el momento en que ocurre cada hallazgo, no al cerrar. "Ninguna" si no aplica.
 
-Ninguna por ahora.
+1. **2026-10-02 (Orquestador, tras el bloqueo de F1-A) — el runner de pruebas si funciona en Windows desde un worktree.** Sin `HERMES_PYTHON`, `scripts/run_tests.sh` falla en la activacion de PM con `activate: no bootstrap Python found`, aunque PM termine de instalar las dependencias. La receta que si funciona:
+   - construir **una sola vez** el interprete de pruebas en el checkout principal: `python -m pm.build_env --source . --out .venv --group dev --group test` (`.venv` esta en `.gitignore`);
+   - en cada worktree, correr las pruebas con Git Bash por ruta absoluta (`bash` no esta en PATH) y `HERMES_PYTHON` apuntando al `.venv` del checkout principal:
+     `& "C:\Program Files\Git\bin\bash.exe" scripts/run_tests.sh tests/agent/test_cli_brain.py`.
+   Verificado con dos archivos: 6/6 y 13/13. Queda como destino `03-aprendizaje-continuo/historico.md` al cerrar.
+2. **2026-10-02 (Worker F1-A) — los briefs no se leen desde `vpc/docs/02-trabajo-activo/` dentro del worktree.** Esa copia esta desactualizada respecto a `planificacion` por diseno, asi que el Worker se encontro el brief inexistente. El contexto cerrado de una tanda va en el mensaje de asignacion o en un archivo fuera del arbol, nunca en una ruta `vpc/` del worktree.
+3. **2026-10-02 (Worker F1-A) — pool real de ramas y worktrees verificado**, para `01-contexto-repositorio/03-entorno-git-y-worktrees.md` §"Pool real", hoy "Por verificar": ramas `local-worker-1/2/3/opencode` (+ remotos de 1/2/3); worktrees principal `planificacion`, `.worktrees/local-worker-3`, `.worktrees/local-worker-opencode`.
+4. **2026-10-02 (Worker F1-A) — D-07 quedo mejor informado que lo que decis el brief:** el conflicto previsto en `agent/cli_brain.py` no se materializa (regiones disjuntas), y `agent/turn_api_call.py` nunca dio conflicto. El riesgo 1 del plan debe leerse con esa correccion.
 
 ## Reglas de negocio acordadas en esta tarea
 
 Se llena en el momento en que ocurre cada hallazgo. "Ninguna" si no aplica.
 
-Ninguna por ahora.
+1. **Candidata, pendiente de verificar en F1-B (no es regla todavia):** `local-worker-3` fija `HERMES_CLIENT_STREAMS = True` en `CliBrainClient`, y `agent/turn_api_call._should_stream` lo consulta para permitir streaming. `opencode-cli` usa protocolo **non-live**: un proceso por turno, `stdin=DEVNULL` y `break` limpio al terminar. Si al verificarlo aparece que un cerebro non-live no puedeconvivir con `HERMES_CLIENT_STREAMS = True`, la regla que se escriba va al flujo `04-flujos-de-negocio/01-cuentas-y-proveedores.md` y se consulta al Responsable humano antes de fijarla, por ser una regla del sistema y no una opinion de esta tarea.
 
 ## Carpetas/archivos huerfanos
 

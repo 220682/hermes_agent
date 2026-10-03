@@ -21,7 +21,13 @@ Vigentes desde 2026-10-02.
 - Trabajo en `.worktrees/local-worker-opencode` (rama `local-worker-opencode`).
 - Base del plan: `local-worker-3` (`218c6f9725`), que contiene F1-F3 (cerebro claude-cli/cursor, app web JEIGER, voz).
 - Python de Hermes: verificar con `hermes --version` desde el worktree.
-- Pruebas: **siempre** con `scripts/run_tests.sh`, nunca `pytest` pelado. En Windows, usar `HERMES_PYTHON` apuntando al Python del test-environment si es necesario.
+- Pruebas: **siempre** con `scripts/run_tests.sh`, nunca `pytest` pelado.
+- **Receta de pruebas en Windows (verificada el 2026-10-02, no adivinada).** `bash` no esta en PATH, asi que se invoca Git Bash por ruta absoluta, y hace falta `HERMES_PYTHON` apuntando al `.venv` del checkout principal; sin esa variable la activacion de PM falla con `activate: no bootstrap Python found` aunque PM termine de instalar:
+  ```
+  $env:HERMES_PYTHON = "D:\VICTOR\CLAUDE CODE\hermes_agent\.venv\Scripts\python.exe"
+  & "C:\Program Files\Git\bin\bash.exe" scripts/run_tests.sh tests/agent/test_cli_brain.py
+  ```
+  Si el `.venv` del checkout principal no existe, no lo re-instales en el worktree: se construye una sola vez con `python -m pm.build_env --source . --out .venv --group dev --group test` desde el checkout principal.
 - `opencode` 1.18.34 ya instalado. Node v24.18.0.
 - Verificar servidores locales con PowerShell nativo, no con `curl`/`netstat` de Git Bash.
 
