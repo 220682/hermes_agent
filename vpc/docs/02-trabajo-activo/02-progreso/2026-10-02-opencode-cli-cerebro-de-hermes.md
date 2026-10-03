@@ -94,10 +94,10 @@ Ninguno: todas las fases cerradas. El siguiente trabajo es la Auditoria, que no 
 
 ## Commits, ramas y worktrees usados
 
-- Rama del Worker: `local-worker-opencode`, worktree `.worktrees/local-worker-opencode`; HEAD final `5cf5e2378f`.
+- Rama del Worker: `local-worker-opencode`, worktree `.worktrees/local-worker-opencode`; HEAD final `166389b3fb` (la sesion corta F2-C elimino el `from typing import Any` sin uso de `protocol.py`).
 - Traslado F1-A: 12 commits rebaseados `0dc22e09f8..633b9b9120`.
 - F1-B: `012f884885`, `f59452772b`, `3e07cf4ad8`, `2de1ef1c5b`.
-- F2: `40e44f8d41`, `840f8198d3`; limpieza de codigo muerto: `5cf5e2378f`.
+- F2: `40e44f8d41`, `840f8198d3`; limpieza de codigo muerto: `5cf5e2378f` y `166389b3fb`.
 - `planificacion`: `5f2feb5c15` (plan), `8c56a000b9` (Documentador + Agente Git), `5181c6a733` (Gate 1 + docs 07/08/09 + skill), pusheada a `origin/planificacion`. Los docs F3 de esta tanda quedan sin commitear: el Orquestador commitea.
 - Handoffs sin commitear en la raiz del worktree: `.handoff-f1-a.md`, `.handoff-f1-b.md`, `.handoff-f2-a.md`, `.handoff-f2-b.md`.
 

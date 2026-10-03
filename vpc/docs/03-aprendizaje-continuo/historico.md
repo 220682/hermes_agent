@@ -94,6 +94,20 @@ Formato de cada entrada: `../00-estandar-agentes/06-plantillas/08-aprendizaje.md
 - **Cuándo reutilizarla:** al correr tests en un worktree de esta máquina. Es un ajuste de entorno, no una regla del repositorio.
 - **Reemplaza a:** ninguna.
 
+## 2026-10-02 — La receta completa para correr tests en Windows desde un worktree `[tests]` `[worktree]` `[windows]`
+
+- **Origen:** plan `2026-10-02-opencode-cli-cerebro-de-hermes`, tanda F1-A (que la 页贯通 como bloqueo) y cierre.
+- **Problema:** la entrada del 2026-09-29 dice usar `HERMES_PYTHON`, pero no basta en Windows: `bash` no está en `PATH`, y sin el intérprete apuntando al `.venv` del **checkout principal** la activación de PM falla con `activate: no bootstrap Python found` aunque PM termine de instalar las dependencias. Un Worker cerró una tanda entera sin poder verificar nada por esto.
+- **Causa:** el runner es un script bash y la máquina no expone bash en el PATH; y cada worktree no tiene su propio `.venv`, así que la activación de PM no encuentra intérprete.
+- **Cómo se resolvió:** dos pasos. (1) Construir **una sola vez** el intérprete en el checkout principal: `python -m pm.build_env --source . --out .venv --group dev --group test` (`.venv` está en `.gitignore`; si ya existe, `pm.build_env` se niega a sobrescribirlo). (2) En cada worktree, invocar Git Bash por ruta absoluta y apuntar `HERMES_PYTHON` al `.venv` del checkout principal:
+  ```
+  $env:HERMES_PYTHON = "D:\VICTOR\CLAUDE CODE\hermes_agent\.venv\Scripts\python.exe"
+  & "C:\Program Files\Git\bin\bash.exe" scripts/run_tests.sh tests/agent/test_cli_brain.py
+  ```
+- **Resultado:** verificado en cuatro archivos (39 tests verdes) y repetido por el Auditor en la auditoría del plan. Con esto la fase F1-A pasó de 4 ítems con el criterio de pruebas "no verificado" a 4/4 Conforme.
+- **Cuándo reutilizarla:** en cualquier worktree de esta máquina en Windows, antes de dar por bloqueada una verificación por falta de intérprete.
+- **Reemplaza a:** amplía la entrada del 2026-09-29; no la contradice.
+
 ## 2026-09-29 — Verificar la interfaz con un arnés de navegador propio, antes de pedir pruebas al humano `[pruebas]` `[voz]` `[playwright]`
 
 - **Origen:** plan `2026-09-27-agente-web-voz-suscripciones`, F3 (tandas F a I).

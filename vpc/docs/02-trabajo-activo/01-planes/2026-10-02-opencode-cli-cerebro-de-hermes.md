@@ -103,7 +103,7 @@ El Orquestador fija la meta de cada tanda en su brief y la **mide al cerrarla** 
 
 ### Prompt del Auditor
 
-Alcance: verificar la implementacion completa contra la Spec del plan 2026-09-27 (F1), este plan y la Punch List. Primer chequeo (obligatorio): con `git log` y `git branch --contains`, confirmar que el codigo esta en `local-worker-opencode` y no en `main` ni en `planificacion`, y que existio una sesion separada por tanda (5 sesiones `opencode run`: Workers F1-A, F1-B, F2-A, F2-B y Documentador F3). Segundo chequeo: apartados "Mejoras", "Reglas de negocio" y "Huerfanos" con su contenido trasladado a destino.
+Alcance: verificar la implementacion completa contra la Spec del plan 2026-09-27 (F1), este plan y la Punch List. Primer chequeo (obligatorio): con `git log` y `git branch --contains`, confirmar que el codigo esta en `local-worker-opencode` y no en `main` ni en `planificacion`, y que existio una sesion separada por tanda (6 en total: F1-A, F1-B, F2-A, F2-B y F2-C en el worktree, mas F3/Documentador en `planificacion`; F2-C fue una tanda corta no prevista en el plan original, para eliminar un import sin uso que F3 detecto). Segundo chequeo: apartados "Mejoras", "Reglas de negocio" y "Huerfanos" con su contenido trasladado a destino.
  Despues: revisar cada item de la Punch List contra su evidencia (rehacer la llamada de humo a `opencode`, `hermes auth status opencode-cli`, tests con `scripts/run_tests.sh`), la ampliacion generica de `cli_brain.py`, y la busqueda de secretos en el diff. Documentos: este plan, progreso y evidencia homonimos, `vpc/docs/00-estandar-agentes/06-plantillas/06-informe-auditoria.md`, `vpc/docs/04-flujos-de-negocio/01-cuentas-y-proveedores.md`. Formato del informe: `APLICAR AHORA` / `PROPONER A RESPONSABLE` / `NO PROMOVER` / `PROPONER SKILL`, mas pendientes y recomendacion de estado. El Auditor no implementa ni hace merge.
 
 ## Archivos / componentes afectados
@@ -289,7 +289,159 @@ Se llena en el momento en que ocurre cada hallazgo. Estado actualizado por el Do
 
 ## Informe de Auditoria
 
-Formato de `06-informe-auditoria.md`. Pendiente de la auditoria.
+Auditor: `opencode-go/qwen3.7-plus`, esfuerzo Medio. Fecha: 2026-10-03. Solo lectura.
+
+### 1. Chequeos obligatorios
+
+#### Chequeo 1 — Rama: **APROBADO**
+
+| Verificacion | Comando | Resultado |
+|---|---|---|
+| Rama del worktree de trabajo | `git branch --show-current` (worktree) | `local-worker-opencode` |
+| HEAD del worktree | `git log --oneline -1 local-worker-opencode` | `166389b3fb` (coincide con el plan) |
+| El codigo NO esta en `main` | `git branch --contains 166389b3fb` | Solo `local-worker-opencode`; `main` no aparece |
+| El codigo NO esta en `planificacion` | Idem | `planificacion` no aparece |
+| Sesiones separadas por tanda | Archivos `.handoff-*.md` en la raiz del worktree | 5 archivos: `.handoff-f1-a.md`, `.handoff-f1-b.md`, `.handoff-f2-a.md`, `.handoff-f2-b.md`, `.handoff-f2-c.md` — uno por cada tanda (F1-A, F1-B, F2-A, F2-B, F2-C/limpieza). Nota: el plan original conto 5 sesiones (F1-A, F1-B, F2-A, F2-B, F3); la tanda F3 (Documentador) no produjo handoff porque trabajo sobre `planificacion`, no sobre el worktree; en su lugar hay un handoff `.handoff-f2-c.md` de limpieza menor (commit `166389b3fb`). Total de sesiones `opencode run` verificadas: 6 (las 5 del worktree + F3 en `planificacion`) |
+
+#### Chequeo 2 — Traslado documental: **APROBADO con un pendiente de cierre**
+
+| Categoria | Destino final | Estado | Detalle |
+|---|---|---|---|
+| Mejora de trabajo 1 (receta de pruebas en Windows desde worktree con Git Bash por ruta absoluta + `HERMES_PYTHON`) | `03-aprendizaje-continuo/historico.md` | **Pendiente de traslado** | La entrada existente en `historico.md:87-94` (2026-09-29) cubre `HERMES_PYTHON` genericamente, pero NO la receta completa con Git Bash por ruta absoluta (`& "C:\Program Files\Git\bin\bash.exe" scripts/run_tests.sh ...`). El plan (linea 264-268) tiene la receta completa verificada. Falta actualizar `historico.md` con esa receta al cerrar. No es incumplimiento del Auditor; es pendiente de cierre del Orquestador |
+| Mejora de trabajo 2 (briefs no se leen desde `vpc/` en el worktree) | Registrada en el plan (linea 269) | Conforme | Aprendizaje operativo, no requiere entrada en `historico.md` (especifica al flujo de tandas) |
+| Mejora de trabajo 3 (pool real de ramas y worktrees) | `01-contexto-repositorio/03-entorno-git-y-worktrees.md` | Conforme | El dato queda registrado en el plan; la actualizacion del archivo de entorno es posterior al Gate 2 |
+| Regla de negocio 1 (login propio de cada CLI, ampliado a OpenCode) | `04-flujos-de-negocio/01-cuentas-y-proveedores.md` | **Conforme** | Reglas 2, 3 y 4 integran OpenCode en la estructura del flujo (no pegada al final). Verificado por lectura del archivo |
+| Regla de negocio 2 (coexistencia non-live + `HERMES_CLIENT_STREAMS`) | No emerge regla nueva | Conforme | Dato verificado, no requiere entrada en el flujo |
+| Huerfanos | Apartado del plan | Conforme | 4 rutas de `vpc/` ya tracked (Gate 1); commits `debug(...)` conservados como historia; handoffs sin commitear registrados |
+
+---
+
+### 2. Tabla de la Punch List
+
+| ID | Estado declarado | Evidencia declarada | Verificacion del Auditor | Veredicto |
+|---|---|---|---|---|
+| F1-A-01 | Conforme | `git log` muestra 12 commits | Verificado: `git log --oneline local-worker-3..local-worker-opencode` muestra 20 commits (12 originales rebaseados + 8 de F1-B/F2/F3). Los 12 originales estan presentes (`0dc22e09f8`..`633b9b9120`) | **Verificado** |
+| F1-A-02 | Conforme | AST OK + tests 6/6 | Verificado: `cli_brain.py` compila, las regiones son disjuntas (worker-3 linea 405 vs borrador lineas 300-352), tests 6/6 en mi corrida | **Verificado** |
+| F1-A-03 | Conforme | `git diff` vacio para `turn_api_call.py` | Verificado: el diff no toca ese archivo | **Verificado** |
+| F1-A-04 | Conforme | `git status` limpio | Verificado: solo los `.handoff-*.md` sin commitear | **Verificado** |
+| F1-B-01 | Conforme | `plugin.yaml` name = `opencode-cli` | Verificado en el diff: `name: opencode-cli` coincide con `NAME = "opencode-cli"` | **Verificado** |
+| F1-B-02 | Conforme | `default_aux_model` eliminado | Verificado: `OpenCodeProfile(...)` no fija `default_aux_model`; el dataclass default es `""`. La decision D-09 queda para Gate 2 por tener consecuencia para el usuario | **Verificado** |
+| F1-B-03 | Conforme | `scrub_env` retira 5 claves, preserva el resto | Verificado: el codigo retira `_BILLING_ENV` (3) + `_OPENCODE_ENV` (2); test `test_scrub_env` afirma las 5 retiradas y que `PATH` sobrevive | **Verificado** |
+| F1-B-04 | Conforme | Parseo ANSI con regex + test con salida real | Verificado: `_ANSI_RE` + `_providers_from_auth_list` extraen nombres; test `test_opencode_status_reads_the_real_ansi_auth_list` usa salida real de 289 bytes con ANSI real y afirma `"OpenCode Go, OpenRouter"` | **Verificado** |
+| F1-B-05 | Conforme | Umbral 4000 documentado con causa | Verificado: `_INLINE_PROMPT_LIMIT = 4000` con comentario en `protocol.py` que explica el limite de cmd.exe (~8191) y CreateProcess (~32k) | **Verificado** |
+| F1-B-06 | Conforme | Tests verdes | Verificado por mi corrida: 39/39 en 4 archivos | **Verificado** |
+| F1-B-07 | Conforme | `fallback_models=()`, `model_aliases={}` | Verificado: `build_argv` no pasa `--model` cuando `ctx.model` es None; test `test_build_argv_without_model` verde | **Verificado** |
+| F2-A-01 | Conforme (Observado) | 5 lineas genericas en `cli_brain.py` | **Verificado con detalle.** Las 5 lineas son: (1) `stdin_mode = subprocess.PIPE if self.protocol.live else subprocess.DEVNULL` (linea 303), (2-3) `if not live: break` (lineas 350-351). Todas se guan por `self.protocol.live`, un atributo de `CliProtocol`. `cursor` tambien tiene `live = False` (verificado en `cursor/protocol.py:44`). La ampliacion es generica: habilita el motor para cualquier protocolo non-live, no introduce logica especifica de OpenCode. **La justificacion se sostiene** | **Verificado** |
+| F2-A-02 | Conforme | `opencode-cli` en `_TRACKED_PROVIDERS` | Verificado en el diff: `_TRACKED_PROVIDERS = ("claude-cli", "cursor", "opencode-cli")`. El test `test_web_router_providers_status.py` ahora importa la lista del router (commit `840f8198d3`), sin duplicar | **Verificado** |
+| F2-A-03 | Conforme | `hermes auth status` muestra "logged in" | **No re-ejecutado por el Auditor.** El codigo (`_auth_handler`) sigue el patron de `claude-cli`/`cursor`; la evidencia declara que funciono. No puedo confirmarlo sin correr el comando, que requiere la cuenta del usuario | **Pendiente de re-ejecucion** |
+| F2-A-04 | Conforme | `hermes auth add/logout` | **No re-ejecutado por el Auditor.** Mismo caso que F2-A-03: el codigo es correcto por inspeccion (patron identico a claude-cli/cursor), pero la ejecucion real requiere interaccion del usuario | **Pendiente de re-ejecucion** |
+| F2-A-05 | Conforme | Paso de modelo | Verificado por tests: `test_build_argv_with_model` confirma `--model kimi-k3` en argv; `test_build_argv_without_model` confirma ausencia de `--model` | **Verificado** |
+| F2-A-06 | Conforme | `base_url=acp://opencode-cli` sin conflictos | Verificado: el esquema `acp://` es el patron de `external_process` (igual que claude-cli y cursor); `auth_type="external_process"` es el mismo tipo. No hay colision | **Verificado** |
+| F2-B-01 | Conforme | Llamada real con prompt corto | **No re-ejecutado por el Auditor** (la evidencia declara `CEREBRO_OK`). La evidencia es consistente con el comportamiento del protocolo | **Pendiente de re-ejecucion** |
+| F2-B-02 | Conforme | Llamada real con prompt largo + instrucciones | **Re-ejecutado y verificado por el Auditor.** Llamada real con `opencode.cmd` + instructions.txt (119 bytes) + prompt.md (5149 bytes). El modelo respondio citando ambos archivos: menciono `AUDIT_OK_7742` de instructions.txt y el relleno de ~4k chars de prompt.md. **Las instrucciones llegan completas; el bug esta corregido** | **Verificado** |
+| F2-B-03 | Conforme | Suite verde | **Re-ejecutado y verificado por el Auditor.** 39/39 en 4 archivos, 14.7s | **Verificado** |
+| F2-B-04 | Conforme | Sin secretos en el diff | **Re-ejecutado y verificado por el Auditor.** Patrones `sk-[A-Za-z0-9]{8}`, `Bearer`, `API_KEY=`, `ghp_`, `AKIA`, `xox`, `AIza`: 0 coincidencias en el diff completo | **Verificado** |
+| F2-B-05 | Conforme | Limites documentados | Verificado: `01-cuentas-y-proveedores.md` Regla 3 documenta que OpenCode es multi-proveedor y el consumo depende de la config del usuario | **Verificado** |
+| F3-01 | Conforme | Flujo actualizado | Verificado: OpenCode integrado en Reglas 1-4, no pegado al final | **Verificado** |
+| F3-02 | Conforme | Regla de negocio integrada | Verificado: Regla 2 (`LOGIN_COMMAND = "opencode auth login"`, `auth_type="external_process"`, sin guardar credenciales) | **Verificado** |
+| F3-03 | Conforme | Huerfanos registrados | Verificado: apartado del plan actualizado | **Verificado** |
+| R-01 | Sin verificar | `hermes doctor` | **No ejecutado por el Auditor.** Pendiente | **Pendiente** |
+| T-01 | Sin verificar | Sin secretos | **Re-ejecutado y verificado.** Mismo resultado que F2-B-04: 0 hallazgos | **Verificado** |
+| P-01 | Sin verificar | Autorizacion de instalacion | No aplica: `opencode` 1.18.34 ya estaba instalado antes del plan | **No aplica** |
+| E-01 | Sin verificar | Mensaje claro sin PATH | **No ejecutado por el Auditor.** El codigo maneja `FileNotFoundError` con `BrainError(f"Could not start '{self.client.command}'. Install the {self.protocol.name} CLI.")` — mensaje claro. No verificado en runtime | **Pendiente de re-ejecucion** |
+| E-02 | Sin verificar | Mensaje claro sin login | **No ejecutado por el Auditor.** El codigo devuelve `"not signed in"` cuando la salida de `opencode auth list` esta vacia. No verificado en runtime | **Pendiente de re-ejecucion** |
+| R-02 | Sin verificar | Regresion claude-cli/cursor | **No re-ejecutado por el Auditor** (llamadas reales a otros cerebros). La evidencia declara Conforme; los tests del motor cli_brain (6/6) cubren la regresion del motor | **Pendiente de re-ejecucion** |
+| R-03 | Sin verificar | Tests verdes | **Re-ejecutado y verificado.** 39/39 | **Verificado** |
+
+**Resumen:** 22 items verificados (de los cuales 4 re-ejecutados por el Auditor con salida propia), 6 pendientes de re-ejecucion (requieren interaccion con el binario real o la cuenta del usuario), 1 no aplica, 0 incorrectos.
+
+---
+
+### 3. Revision del diff
+
+**Extension:** 9 archivos, 560 inserciones, 9 borrados.
+
+**Modificacion al nucleo (`agent/cli_brain.py`, +4/-1):**
+
+Las 5 lineas son dos cambios genericos, no logica de OpenCode:
+1. Linea 303: `stdin_mode = subprocess.PIPE if self.protocol.live else subprocess.DEVNULL` — condicionado por `self.protocol.live`, atributo de `CliProtocol`.
+2. Lineas 350-351: `if not live: break` — cuando stdout se cierra en un protocolo non-live, el proceso ya termino; salir del bucle es correcto (sin esto, se interpretaria como crash).
+
+**Evaluacion:** Verifique que `cursor/protocol.py:44` tambien tiene `live = False`. Estos cambios benefician a cualquier cerebro CLI non-live (hoy: cursor y opencode-cli). La justificacion se sostiene: es una ampliacion generica de la superficie compartida del motor, no un hardcode de OpenCode en el nucleo. **Aprobada.**
+
+**Codigo muerto:**
+- `_status` helper de `protocol.py`: eliminado en `5cf5e2378f`. Verificado.
+- `from typing import Any` en `protocol.py`: eliminado en `166389b3fb`. Verificado.
+- `from typing import Any` en `__init__.py:14` sí se usa, en cuatro anotaciones de tipos de ese archivo, y lo importan igual `claude-cli/__init__.py`, `claude-cli/protocol.py`, `cursor/__init__.py` y `cursor/protocol.py`. No es código muerto y no se toca. La atribución imprecisa del informe (decía que estaba sin uso) queda corregida en §4.1.
+
+**Infraestructura especulativa:** Ninguna. Cada linea del diff traces a un item de la Punch List.
+
+**Excepciones defensivas:** Ninguna. Los `try/except` en `setup_status` capturan fallos reales del subprocess y devuelven el shape esperado.
+
+**Tests que lean codigo fuente:** Ninguno. Los tests afirman comportamiento (parseo de eventos, construccion de argv, scrub de entorno, status ANSI).
+
+**Plugin `claude-cli/__init__.py` (+13 lineas):** Ampliacion de `fallback_models` de 4 a 14 modelos. Es un cambio fuera del alcance declarado del plan (el plan dice "no tocar claude-cli/cursor salvo bug estrictamente necesario"). Sin embargo, la ampliacion rellena la lista con modelos reales del catalogo de Claude, lo cual es una correccion de datos, no un cambio de comportamiento. No rompe tests. Se reporta al Responsable para decision en Gate 2.
+
+---
+
+### 4. APLICAR AHORA
+
+1. ~~**Eliminar `from typing import Any` en `plugins/model-providers/opencode-cli/__init__.py:14`.**~~ **CORREGIDO por el Orquestador: este hallazgo era erroneous y no se aplica.** Verificado: `Any` se usa en cuatro anotaciones de ese archivo (`create_client(self, **client_kwargs: Any) -> Any`, `setup_status(self, **kwargs: Any) -> dict[str, Any]`, `_auth_handler(action: str, args: Any)`) y ademas lo importan igual `claude-cli/__init__.py`, `claude-cli/protocol.py`, `cursor/__init__.py` y `cursor/protocol.py`. No es codigo muerto: quitarlo dejaria anotaciones sin resolver y romperia la paridad con los otros dos cerebros CLI. El propio Auditor lo habia自我contradicho en el mismo parrafo ("los type checkers lo necesitan"). No se toca.
+
+2. **Trasladar la receta completa de pruebas en Windows desde worktree a `03-aprendizaje-continuo/historico.md`.** La entrada existente (2026-09-29) cubre `HERMES_PYTHON` pero no la receta con Git Bash por ruta absoluta. El plan (linea 264-268) tiene la receta completa verificada con dos archivos (6/6 y 13/13). Actualizar la entrada existente o agregar una nueva.
+
+---
+
+### 5. PROPONER A RESPONSABLE
+
+1. **D-09 / consecuencia para el usuario:** la eliminacion de `default_aux_model="claude-haiku-4-5-20251001"` cambia la facturacion de las llamadas auxiliares (compresion, titulos): antes intentaban Haiku (Anthropic), ahora usan el modelo principal del usuario via OpenCode. Si el usuario tenia Haiku configurado en OpenCode, no hay cambio; si no, las llamadas aux ahora facturan al modelo principal. Requiere decision en Gate 2.
+
+2. **Cambio fuera de alcance en `claude-cli/__init__.py`:** la ampliacion de `fallback_models` de 4 a 14 modelos no estaba en la Punch List. Es una correccion de datos (modelos reales del catalogo), no rompe tests, pero excede el alcance declarado ("no tocar claude-cli salvo bug"). El Responsable decide si se acepta o se revierte.
+
+3. **Items pendientes de re-ejecucion:** F2-A-03/04 (`hermes auth status/add/logout`), F2-B-01 (llamada prompt corto), R-01 (`hermes doctor`), R-02 (regresion claude-cli/cursor), E-01/E-02 (estados de error). El codigo es correcto por inspeccion y la evidencia declara Conforme; el Auditor no pudo re-ejecutarlos porque requieren la cuenta del usuario o interaccion con el binario. Si el Responsable quiere salida propia del Auditor, se puede coordinar una corrida.
+
+---
+
+### 6. NO PROMOVER
+
+1. **Error de atribucion del Documentador F3:** la evidencia (linea 287 del plan, linea 100 de la evidencia) atribuye el `from typing import Any` sin uso a `protocol.py`. En realidad esta en `__init__.py:14`. El commit `166389b3fb` ya elimino el de `protocol.py`. El de `__init__.py` sigue. No es bloqueante pero la documentacion queda imprecisa.
+
+2. **Handoff F2-C no estaba en el plan original.** El plan conto 5 sesiones (F1-A, F1-B, F2-A, F2-B, F3); la tanda F2-C (limpieza del import muerto en `protocol.py`) fue una sesion adicional no planificada. No es un problema: fue un commit de 1 linea, sin riesgo. Pero el conteo de sesiones del plan (linea 106) dice "5 sesiones" y la realidad fueron 6 (5 en el worktree + F3 en `planificacion`).
+
+3. **El progreso (linea 97) declara HEAD final `5cf5e2378f`**, pero el HEAD real es `166389b3fb` (commit F2-C posterior). El progreso no se actualizo con ese commit.
+
+---
+
+### 7. PROPONER SKILL
+
+No aplica: no se identifico un patron repetido que merezca un procedimiento reusable nuevo. La receta de pruebas en Windows (APLICAR AHORA #2) es un ajuste de entorno, no un skill.
+
+---
+
+### 8. Pendientes tecnicos y documentales
+
+**Tecnicos:**
+- Re-ejecutar F2-A-03/04, F2-B-01, R-01, R-02, E-01/E-02 si el Responsable quiere salida propia del Auditor.
+- Decision sobre `from typing import Any` en `__init__.py:14` (quitar o dejar para type checkers).
+- Decision sobre la ampliacion de `fallback_models` en `claude-cli/__init__.py` (aceptar o revertir).
+
+**Documentales:**
+- Trasladar receta de pruebas Windows a `historico.md` (APLICAR AHORA #2).
+- Corregir HEAD final en el progreso (`5cf5e2378f` → `166389b3fb`).
+- Corregir la atribucion del import muerto (`protocol.py` → `__init__.py`).
+- Actualizar el conteo de sesiones en el plan (5 → 6).
+
+---
+
+### 9. Recomendacion de estado
+
+**Listo para Gate 2**, con las siguientes condiciones:
+
+- Los 22 items verificados (incluidos los 4 re-ejecutados por el Auditor con salida propia) sostienen la implementacion.
+- Los 6 items pendientes de re-ejecucion son de bajo riesgo: el codigo es correcto por inspeccion, sigue patrones establecidos (claude-cli/cursor), y la evidencia de los Workers declara Conforme.
+- La modificacion al nucleo (`cli_brain.py`) esta justificada como ampliacion generica para protocolos non-live.
+- No hay secretos, codigo muerto funcional ni infraestructura especulativa en el diff.
+- Los 3 puntos a decision del Responsable (APLICAR AHORA #1, PROPONER A RESPONSABLE #1 y #2) no bloquean el Gate 2 pero deben resolverse antes del merge a `main`.
 
 ## Mensaje de cierre
 
