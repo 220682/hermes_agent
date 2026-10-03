@@ -63,10 +63,11 @@ Cada rol corre en su **propia sesion** de opencode CLI (`opencode run --model <m
 | Worker F1-B (revision plugin) | `opencode run --model opencode-go/qwen3.8-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
 | Worker F2-A (nucleo y superficie) | `opencode run --model opencode-go/qwen3.7-plus --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
 | Worker F2-B (verificacion real) | `opencode run --model opencode-go/qwen3.7-plus --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
-| Worker F3 (documentacion y limpieza) | `opencode run --model opencode-go/qwen3.8-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
+| Documentador F3 (documentacion y limpieza) | `opencode run --model opencode-go/qwen3.8-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` (codigo) / `planificacion` (docs del flujo) | `.worktrees/local-worker-opencode` | Pendiente |
+| Agente Git | — | — | — | **No usado en este plan** (decision D-12) |
 | Auditor | `opencode run --model opencode-go/qwen3.7-plus --dir <raiz del repo>` | `planificacion` | N/A | Pendiente |
 
-El `--dir` de cada Worker es su worktree: asi el brief, las pruebas y los comandos corren sobre la rama de la tanda, no sobre `planificacion`.
+El `--dir` de cada tanda es su worktree: asi el brief, las pruebas y los comandos corren sobre la rama de la tanda, no sobre `planificacion`. La documentacion de proceso (flujo de negocio, apartados del plan) va a `planificacion`, que es la rama de los roles que no son Worker.
 
 ### Tabla de niveles y esfuerzo por fase/tanda
 
@@ -78,7 +79,8 @@ Los ids de modelo salen de `~/.config/opencode/opencode.jsonc` (`roles.planner.d
 | F1-B (revision plugin) | Economico | Medio | `opencode-go/qwen3.8-flash` | Revision de codigo existente contra lista de riesgos ya acotada |
 | F2-A (nucleo y superficie) | Base | Medio | `opencode-go/qwen3.7-plus` | Requiere analisis de la ampliacion generica de cli_brain.py e integracion con superficie existente |
 | F2-B (verificacion real) | Base | Medio | `opencode-go/qwen3.7-plus` | Llamada real, pruebas de regresion, verificacion de secretos |
-| F3 (documentacion) | Economico | Medio | `opencode-go/qwen3.8-flash` | Documentacion y limpieza |
+| F3 (documentacion) | Economico | Medio | `opencode-go/qwen3.8-flash` | Rol Documentador: la tanda es solo documentacion, flujo de negocio y registro de huerfanos. El estandar no define funciones para el Documentador, solo su nivel de modelo (`09-orquestacion-y-modelos.md:18`), asi que su alcance es el que el plan le asigna aqui |
+| Agente Git | Economico | Medio | `opencode-go/qwen3.8-flash` | No instanciado: ver D-12 |
 | Auditoria | Base | Medio | `opencode-go/qwen3.7-plus` | Revision integral |
 
 Ninguna fase usa modelo Superior ni esfuerzo Alto (decision D-04), asi que no hace falta pedir autorizacion de nivel.
@@ -97,11 +99,12 @@ El Orquestador fija la meta de cada tanda en su brief y la **mide al cerrarla** 
 
 **Worker F2-B (verificacion real).** Rol: verificacion real con el binario `opencode`, pruebas de regresion y busqueda de secretos. Subalcance: items F2-B. Rama/worktree: `local-worker-opencode`. Lee antes: brief `f2-b.md`. Salida: items F2-B en Conforme, evidencia en el archivo homonimo. Restricciones: no push, no merge, no imprimir credenciales ni tokens; la llamada de humo usa `opencode` con un prompt minimo; no tocar `claude-cli` ni `cursor` salvo para verificar que siguen funcionando.
 
-**Worker F3 (documentacion y limpieza).** Rol: documentar el proveedor, actualizar el flujo de negocio y limpiar huerfanos. Subalcance: items F3. Rama/worktree: `local-worker-opencode`. Lee antes: brief `f3.md`; `vpc/docs/04-flujos-de-negocio/01-cuentas-y-proveedores.md`. Salida: items F3 en Conforme. Restricciones: no push, no merge, no borrar archivos sin autorizacion.
+**Documentador F3 (documentacion y limpieza).** Rol: documentar el proveedor, actualizar el flujo de negocio y registrar huerfanos. Subalcance: items F3. Lee antes: brief `f3.md`; `vpc/docs/04-flujos-de-negocio/01-cuentas-y-proveedores.md`; `vpc/docs/00-estandar-agentes/05-aprendizaje-continuo.md`. Donde escribe: la regla de negocio y los hallazgos van a `planificacion` (flujo de negocio y apartados del plan); el Documentador no toca codigo, asi que no necesita la rama `local-worker-opencode` salvo que el brief lo pida. Salida: items F3 en Conforme. Restricciones: no push, no merge, **no borrar ningun archivo sin autorizacion del Responsable humano** (los huerfanos se reportan, no se limpian por cuenta propia), no imprimir secretos.
 
 ### Prompt del Auditor
 
-Alcance: verificar la implementacion completa contra la Spec del plan 2026-09-27 (F1), este plan y la Punch List. Primer chequeo (obligatorio): con `git log` y `git branch --contains`, confirmar que el codigo esta en `local-worker-opencode` y no en `main` ni en `planificacion`, y que existio un chat de Worker separado. Segundo chequeo: apartados "Mejoras", "Reglas de negocio" y "Huerfanos" con su contenido trasladado a destino. Despues: revisar cada item de la Punch List contra su evidencia (rehacer la llamada de humo a `opencode`, `hermes auth status opencode-cli`, tests con `scripts/run_tests.sh`), la ampliacion generica de `cli_brain.py`, y la busqueda de secretos en el diff. Documentos: este plan, progreso y evidencia homonimos, `vpc/docs/00-estandar-agentes/06-plantillas/06-informe-auditoria.md`, `vpc/docs/04-flujos-de-negocio/01-cuentas-y-proveedores.md`. Formato del informe: `APLICAR AHORA` / `PROPONER A RESPONSABLE` / `NO PROMOVER` / `PROPONER SKILL`, mas pendientes y recomendacion de estado. El Auditor no implementa ni hace merge.
+Alcance: verificar la implementacion completa contra la Spec del plan 2026-09-27 (F1), este plan y la Punch List. Primer chequeo (obligatorio): con `git log` y `git branch --contains`, confirmar que el codigo esta en `local-worker-opencode` y no en `main` ni en `planificacion`, y que existio una sesion separada por tanda (5 sesiones `opencode run`: Workers F1-A, F1-B, F2-A, F2-B y Documentador F3). Segundo chequeo: apartados "Mejoras", "Reglas de negocio" y "Huerfanos" con su contenido trasladado a destino.
+ Despues: revisar cada item de la Punch List contra su evidencia (rehacer la llamada de humo a `opencode`, `hermes auth status opencode-cli`, tests con `scripts/run_tests.sh`), la ampliacion generica de `cli_brain.py`, y la busqueda de secretos en el diff. Documentos: este plan, progreso y evidencia homonimos, `vpc/docs/00-estandar-agentes/06-plantillas/06-informe-auditoria.md`, `vpc/docs/04-flujos-de-negocio/01-cuentas-y-proveedores.md`. Formato del informe: `APLICAR AHORA` / `PROPONER A RESPONSABLE` / `NO PROMOVER` / `PROPONER SKILL`, mas pendientes y recomendacion de estado. El Auditor no implementa ni hace merge.
 
 ## Archivos / componentes afectados
 
@@ -238,6 +241,8 @@ No aplica: el plan no anade endpoints nuevos (reutiliza `providers_status.py` ex
 | 2026-10-02 | D-08 (pendiente Gate 1): base del plan = `local-worker-3` | Planner (por aprobar) |
 | 2026-10-02 | D-09 (pendiente Gate 1): `default_aux_model` se revisa en F1-B; si se cambia, el Responsable humano elige | Planner (por aprobar) |
 | 2026-10-02 | D-10 (pendiente Gate 1): push de ramas bloqueado hasta autorizacion explicita | Planner (por aprobar) |
+| 2026-10-02 | D-11: la tanda F3 la ejecuta el rol **Documentador** (`opencode-go/qwen3.8-flash`, Medio) y no un Worker; su alcance son docs, flujo de negocio y registro de huerfanos. El estandar no define funciones para el Documentador, solo su nivel de modelo (`09-orquestacion-y-modelos.md:18`), asi que el alcance queda fijo en esta tabla | Orquestador |
+| 2026-10-02 | D-12: el **Agente Git no se instancia** en este plan. Sus funciones (`09-orquestacion-y-modelos.md:171-184`) son comandos git mecanicos y exige verificador para merge a `main`, `push --force` y `branch -D`. Aqui el commit lo hace el Worker en su propia rama (`02-roles-y-delegacion.md` §Worker), el push esta bloqueado (D-10) y el merge solo ocurre en Gate 2, asi que no queda trabajo mecanico para ese rol | Orquestador |
 
 ## Enlaces a progreso y evidencia homonimos
 
