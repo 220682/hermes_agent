@@ -6,9 +6,9 @@
 
 ## Estado general y fase actual
 
-Estado: **F1, F2 y F3 cerradas; Auditoria cerrada (2026-10-03); Gate 2 BLOQUEADO por el hallazgo H-01.** Gate 1 aprobado el 2026-10-02 (D-01 a D-10, incluidas la reutilizacion de `local-worker-opencode` y el bloqueo de push). Fases: F1 → F2 → F3, en serie.
+Estado: **F1, F2 y F3 cerradas; Auditoria cerrada; H-01 RESUELTO y verificado (2026-10-03). Gate 2 pendiente del Responsable humano.** Gate 1 aprobado el 2026-10-02 (D-01 a D-10, incluidas la reutilizacion de `local-worker-opencode` y el bloqueo de push). Fases: F1 → F2 → F3, en serie.
 
-Fase actual: **ninguna en ejecucion.** La Auditoria se emitio el 2026-10-03 (`4dc310e27d`) y el Orquestador re-ejecuto ese mismo dia los 6 items que quedaban pendientes. Resultado: 4 verificados, 1 no verificable por motivos de entorno y **1 No conforme (H-01: el turno se corta en el primer `step_finish`, la llamada real devuelve texto vacio)**. El Gate 2 no puede aprobarse hasta que H-01 se corrija y se vuelva a verificar. Detalle en § "Re-ejecucion de los items pendientes" del plan y en § "Re-ejecucion del 2026-10-03" de la evidencia.
+Fase actual: **ninguna en ejecucion.** La Auditoria se emitio el 2026-10-03 (`4dc310e27d`); ese mismo dia el Orquestador re-ejecuto los 6 items que quedaban pendientes (4 verificados, 1 no verificable por entorno, 1 No conforme) y abrio el hallazgo H-01. H-01 se corrigio en dos tandas de Worker (F2-D y F2-E) y quedo verificado con salida propia: 45/45 tests y la llamada real respondiendo `ok` con exit 0. Detalle en § "Re-ejecucion de los items pendientes" y § H-01/H-02 del plan, y en § "Tandas F2-D y F2-E" de la evidencia.
 
 ## Tabla de roles / Workers y estado
 
@@ -84,19 +84,23 @@ Re-verificado por la tanda F3 (misma rama, sin tocar codigo): escaneo de secreto
 
 ## Trabajo actual
 
-Ninguno. La Auditoria esta cerrada y los items pendientes de su informe fueron re-ejecutados el 2026-10-03. El siguiente trabajo **no** es el Gate 2: es una tanda de Worker que corrija H-01 y su verificacion.
+Ninguno. H-01 esta corregido y verificado; las dos tandas que lo arreglaron (F2-D, F2-E) estan cerradas con handoff. Lo que sigue es decision del Responsable humano.
 
 ## Pendientes
 
-1. **H-01 (bloqueante) — tanda de Worker para corregir el corte de turno en `opencode-cli`.** No lo implementa el Orquestador (`02-roles-y-delegacion.md`): es codigo. Alcance minimo: `parse_line` no debe emitir `done` por un `step_finish` cuyo `reason` no sea el de fin de turno (solo se observaron `tool-calls` y `stop`; comprobar si hay mas), verificar que `usage` se reporte una sola vez, y anadir el caso a `tests/plugins/model-providers/test_opencode_protocol.py`. Re-verificar F2-B-01 con salida propia por los tres caminos (cliente `stream=True`, `stream=False` y el comando literal del plan).
-2. **Revision de la Auditoria sobre H-01:** su veredicto de "listo para Gate 2" se baso en llamadas directas al binario, no en el camino real de Hermes. El informe debe reemitirse (o complementarse) tras la correccion.
-3. **Gate 2 — decision del Responsable humano**, con el arreglo ya verificado. Ademas de las 3 decisiones que seguian abiertas (D-09 sin modelo auxiliar de Haiku; `fallback_models` de `claude-cli` ampliado de 4 a 14 modelos, fuera de alcance; y los items de re-ejecucion, ya resueltos salvo R-02), hay que decidir sobre el commit `c36d14f4e1` (`apps/jeiger-web`, fuera de alcance y sin auditar) que hoy esta en la rama del Worker.
-4. **R-02 / F2-B-02 no verificables en esta maquina:** `claude-cli` bloqueado por la organizacion y `cursor` sin cupo. Si se quiere evidencia de regresion con llamadas reales, hace falta otra cuenta o cupo; no es un defecto del plan.
-5. Trasladar la mejora de trabajo 1 (receta de pruebas en Windows desde worktree) a `03-aprendizaje-continuo/historico.md`: **hecho** en `4dc310e27d`.
+1. **Gate 2 — decision del Responsable humano.** Ya no hay bloqueos tecnicos. Quedan por decidir:
+   - **H-02** (no bloqueante): usar `opencode-cli` exige `-m <modelo-de-opencode>`; el modelo por defecto de Hermes no existe para opencode. Opciones: dejarlo documentado, poblar el catalogo del plugin, o que Hermes no pase su default a proveedores CLI externos.
+   - **D-09**: las llamadas auxiliares (compresion, titulos) ahora usan el modelo principal del usuario via OpenCode en vez de Haiku. Consecuencia de facturación para el usuario.
+   - **`fallback_models` de `claude-cli`** ampliado de 4 a 14 modelos, fuera del alcance del plan: aceptar o revertir.
+   - **El commit `c36d14f4e1`** (`apps/jeiger-web`, fuera de alcance, sin auditar) que esta en la misma rama: entra al merge, se separa, o se audita aparte.
+   - Merge a `main` y push de la rama: ambos requieren su autorizacion (D-10).
+2. **Revision de la Auditoria sobre H-01 y H-02:** el informe se emitio con llamadas directas al binario, no por el camino real de Hermes, y no vio ninguno de los dos. Corresponde una revision (o un apendice del Auditor) antes de dar por cerrado el plan.
+3. **R-02 / F2-B-02 no verificables en esta maquina:** `claude-cli` bloqueado por la organizacion y `cursor` sin cupo. Hace falta otra cuenta o cupo para evidencia de regresion con llamadas reales; no es un defecto del plan.
+4. Mejora de trabajo 1 (receta de pruebas en Windows desde worktree) trasladada a `03-aprendizaje-continuo/historico.md`: **hecho** en `4dc310e27d`.
 
 ## Commits, ramas y worktrees usados
 
-- Rama del Worker: `local-worker-opencode`, worktree `.worktrees/local-worker-opencode`; HEAD **`c36d14f4e1`** (verificado 2026-10-03). Detras de `166389b3fb` hay un commit mas, `fix(jeiger-web): resolve 4 tsc -b build errors` (F4-B), **fuera del alcance de este plan**, sin auditar y sin pushear: ningun remoto lo contiene.
+- Rama del Worker: `local-worker-opencode`, worktree `.worktrees/local-worker-opencode`; HEAD **`3f6f0017ad`** (verificado 2026-10-03). Encima de `166389b3fb` (fin del plan) hay `c36d14f4e1` (`fix(jeiger-web)`, **fuera de alcance, sin auditar, sin pushear**) y las dos tandas de correccion `4458d65635` (H-01) y `3f6f0017ad` (F2-E). La rama **nunca se ha pusheado**: ningun remoto la contiene.
 - Traslado F1-A: 12 commits rebaseados `0dc22e09f8..633b9b9120`.
 - F1-B: `012f884885`, `f59452772b`, `3e07cf4ad8`, `2de1ef1c5b`.
 - F2: `40e44f8d41`, `840f8198d3`; limpieza de codigo muerto: `5cf5e2378f` y `166389b3fb`.
@@ -118,17 +122,18 @@ Ninguno. La Auditoria esta cerrada y los items pendientes de su informe fueron r
 
 ## Bloqueos, riesgos y decisiones requeridas
 
-- **Bloqueo abierto: H-01.** El Gate 2 queda bloqueado hasta que un Worker lo corrija y se verifique de nuevo por el camino real.
+- **Sin bloqueos tecnicos abiertos.** H-01 quedo resuelto y verificado el 2026-10-03.
 - D-09 cerrada en F1-B: el pin del modelo auxiliar Anthropic se quito (`f59452772b`); como puede tener consecuencia para el usuario, se evalua en el Gate 2.
-- La rama del Worker lleva un commit ajeno al plan (`c36d14f4e1`, `apps/jeiger-web`), sin auditar y sin pushear. Si se fusiona a `main` tal como esta, entra tambien. Decision del Gate 2.
+- H-02: usar `opencode-cli` requiere `-m` con un modelo de opencode. Decision del Gate 2.
+- La rama del Worker lleva un commit ajeno al plan (`c36d14f4e1`, `apps/jeiger-web`), sin auditar y sin pushear; la rama nunca se ha pusheado. Si se fusiona a `main` tal como esta, entra tambien.
 
 ## Proximo paso verificable
 
-Una tanda de Worker (brief propio, worktree `.worktrees/local-worker-opencode`) que corrija H-01 en `plugins/model-providers/opencode-cli/protocol.py`, con test del caso `step_finish`/`tool-calls` y re-verificacion de F2-B-01 por los tres caminos. Salida de referencia para esa tanda: § "Re-ejecucion del 2026-10-03 (Orquestador)" de la evidencia y § H-01 del plan.
+Gate 2 del Responsable humano. Con lo que hay que resolverlo: el plan § H-01 (cerrado con su verificacion), § H-02 (las tres opciones), § "Estado real de la rama" (el commit ajeno y el push), el registro de decisiones D-09, y el punto del Auditor sobre `fallback_models` de `claude-cli`. Antes del cierre, una revision de la Auditoria que cubra H-01 y H-02 por el camino real de Hermes.
 
 ## Ultima actualizacion y responsable
 
-2026-10-03, Orquestador (re-ejecucion de los 6 items pendientes del informe de Auditoria; hallazgo H-01; sin tocar codigo, sin commit, sin push, sin merge).
+2026-10-03, Orquestador (re-ejecucion de los 6 items pendientes, hallazgo H-01, dos tandas de Worker para corregirlo —F2-D `4458d65635` y F2-E `3f6f0017ad`—, verificacion propia de ambas, y H-02 documentado como decision del Gate 2; sin merge, sin push de la rama del Worker).
 
 ## Handoffs
 

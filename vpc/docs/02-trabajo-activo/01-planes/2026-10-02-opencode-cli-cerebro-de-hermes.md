@@ -166,7 +166,7 @@ Ningun rol hace merge a `main`, push de ramas de trabajo ni borrado de archivos 
 | F2-A-04 | F2-A | `hermes auth add opencode-cli` lanza `opencode auth login` interactivo; `hermes auth logout opencode-cli` indica que use `opencode auth logout` | Salida de ambos comandos | Sin verificar |
 | F2-A-05 | F2-A | Paso de modelo: `hermes chat --provider opencode-cli --model openrouter/google/gemini-pro` pasa `--model openrouter/google/gemini-pro` al CLI; sin modelo, no pasa `--model` y OpenCode usa su default | Test de `build_argv` + llamada real | Sin verificar |
 | F2-A-06 | F2-A | `base_url=acp://opencode-cli` y `api_mode=chat_completions` no causan conflictos con el registro de proveedores existente | `providers.get_provider_profile("opencode-cli")` sin error | Sin verificar |
-| F2-B-01 | F2-B | Llamada de humo real: `hermes chat --provider opencode-cli -Q --max-turns 1 -q "Responde solo: ok"` responde sin error, sin imprimir credenciales | Transcripcion de la ejecucion | **No conforme (2026-10-03, H-01): responde con texto vacio** |
+| F2-B-01 | F2-B | Llamada de humo real: `hermes chat --provider opencode-cli -Q --max-turns 1 -q "Responde solo: ok"` responde sin error, sin imprimir credenciales | Transcripcion de la ejecucion | **Conforme con `-m` (2026-10-03)**: H-01 corregido en `4458d65635`, la llamada responde `ok` con exit 0 usando `-m opencode-go/deepseek-v4-flash`. Sin `-m` falla por H-02 y ahora **nombra la causa** en vez de responder vacio |
 | F2-B-02 | F2-B | Regresion: `hermes chat --provider claude-cli -Q --max-turns 1 -q "ok"` sigue respondiendo; `hermes chat --provider cursor` no se rompe | Salida de ambos comandos | Sin verificar: no ejecutable en esta maquina (claude-cli bloqueado por la organizacion, cursor sin cupo). No es un defecto del plan |
 | F2-B-03 | F2-B | Suite de pruebas afectada verde: `tests/agent/test_cli_brain.py`, `tests/plugins/test_cli_brain_providers.py`, `tests/plugins/model-providers/test_opencode_protocol.py` con `scripts/run_tests.sh` | Salida del runner | Sin verificar |
 | F2-B-04 | F2-B | Sin secretos en el diff: ningun token, clave o credencial en `git diff local-worker-3..local-worker-opencode` | Busqueda de patrones | Sin verificar |
@@ -460,7 +460,17 @@ El Auditor dejo 6 items "pendiente de re-ejecucion" porque requieren el binario 
 | E-01 binario ausente | `BrainError: Could not start '...'. Install the opencode-cli CLI.` | **Verificado** |
 | E-02 sin login | `opencode-cli: logged out` + `Run \`opencode auth login\` to sign in with your OpenCode account.` | **Verificado** (con un binario simulado de salida vacia, para no tocar la credencial real) |
 
-### H-01 (bloqueante) - el turno se corta en el primer `step_finish`
+### H-01 (BLOQUEANTE, **resuelto el 2026-10-03**) - el turno se cortaba en el primer `step_finish`
+
+> **Estado: cerrado.** Corregido por el Worker de la tanda F2-D en el commit `4458d65635` y verificado
+> por el Orquestador con salida propia: 42/42 tests en los cuatro archivos del plan, y la llamada real
+> `hermes chat --provider opencode-cli -Q --max-turns 1 -m opencode-go/deepseek-v4-flash -q "Responde solo: ok"`
+> devuelve `ok` con exit 0. El arreglo: `parse_line` solo emite `done` cuando `reason` es `stop`; un
+> `reason` vacio o desconocido degrada a "sin `done`" (el bucle sale cuando se acaba el stream y entrega
+> el texto ya acumulado), nunca a un corte prematuro. `usage` sigue siendo el del ultimo paso, sin sumar.
+> Evidencia: § "Tandas F2-D y F2-E" de la evidencia.
+
+El defecto, tal como se encontro:
 
 `opencode run --format json` emite **un `step_finish` por paso**, no solo al final. Secuencia real capturada con el mismo argv, el mismo entorno y el mismo cwd que usa Hermes:
 
@@ -482,14 +492,24 @@ El Auditor dejo 6 items "pendiente de re-ejecucion" porque requieren el binario 
 
 **Alcance:** es especifico de `opencode-cli`. `claude-cli` es `live = True` y entrega un unico evento `result`; `cursor` solo entrega `done` con `result`. Ninguno de los dos tiene este defecto y el motor compartido no se toca.
 
-**Arreglo propuesto (para un Worker; el Orquestador no implementa):** en `parse_line`, no emitir `done` por un `step_finish` cuyo `reason` no sea el de fin de turno. Los unicos valores observados en esta maquina son `tool-calls` y `stop`; antes de fijar la lista hay que comprobar con el CLI si existen mas. Revisar ademas que `usage` se reporte una sola vez (el del ultimo `step_finish`) y anadir el caso a `tests/plugins/model-providers/test_opencode_protocol.py`.
+**Arreglo aplicado (tanda F2-D, commit `4458d65635`):** `parse_line` solo emite `done` cuando `reason` es `stop`. Un `reason` vacio o desconocido degrada a "sin `done`": el bucle sale cuando se acaba el stream y entrega el texto ya acumulado, nunca un corte prematuro. `usage` sigue siendo el del ultimo `step_finish`, sin sumar. Tests anadidos para los cuatro casos (fin de paso, fin de turno, reason vacio/desconocido, y `session_id`).
 
-**Efecto sobre el Gate 2:** mientras H-01 siga abierto, F2-B-01 no es Conforme y el Gate 2 no puede approvingse. El informe del Auditor (22 items verificados) se sustenta en llamadas directas al binario, no en el camino real de Hermes.
+**Efecto sobre el Gate 2:** H-01 quedo **resuelto y verificado** el 2026-10-03 (ver el bloque de estado al inicio de este apartado). Queda H-02, que no bloquea pero hay que decidirlo.
+
+### H-02 (decision del Responsable humano, no bloqueante) - el modelo por defecto de Hermes no es un modelo de opencode
+
+Con H-01 corregido, la llamada **con** `-m` funciona y la llamada **sin** `-m` falla: Hermes pasa su modelo por defecto (`claude-sonnet-5`) como `--model claude-sonnet-5`, opencode no lo conoce y responde con un error. El catalogo de `opencode-cli` esta vacio a proposito (`fallback_models=()`, `model_aliases={}`, decision D-09 / F1-B-07), asi que `/model` no puede resolver un modelo de opencode desde Hermes.
+
+- **No se corrige en este plan:** poblar el catalogo o traducir slugs es la misma clase de cambio fuera de alcance que el Auditor ya marco con `fallback_models` de `claude-cli`, y contradice D-09.
+- **Mitigacion implementada (tanda F2-E, commit `3f6f0017ad`):** el error de opencode ya no se traga. Antes el usuario veia "respuesta vacia"; ahora ve `Provider said: Unexpected server error. ...`. El texto real de opencode esta en `error.data.message`, con `error.name` como respaldo.
+- **Como se usa hoy:** `hermes chat --provider opencode-cli -m <modelo-de-opencode> ...`, por ejemplo `opencode-go/deepseek-v4-flash`. Sin `-m` explicito no funciona.
+- **Lo que decide el Responsable humano:** (a) dejarlo asi y documentar el `-m`; (b) poblar `fallback_models`/`model_aliases` con el catalogo de opencode; (c) hacer que Hermes no pase su modelo por defecto a un proveedor CLI externo. Las tres cambian el alcance del plan.
 
 ### Estado real de la rama (2026-10-03)
 
-- HEAD de `local-worker-opencode`: **`c36d14f4e1`**, no `166389b3fb` como decia el informe. Hay un commit mas: `fix(jeiger-web): resolve 4 tsc -b build errors`, **fuera del alcance de este plan**, sin auditar y sin pushear (ningun remoto lo contiene). Si se fusiona esta rama a `main`, entra tambien ese commit. Decision del Gate 2.
-- `main` es ancestro de `local-worker-opencode` (51 commits por delante), asi que la fusion seria un fast-forward.
+- HEAD de `local-worker-opencode`: **`3f6f0017ad`**. Encima de `166389b3fb` (fin del plan) hay tres commits mas: `c36d14f4e1` (`fix(jeiger-web): resolve 4 tsc -b build errors`, **fuera del alcance de este plan**, sin auditar, sin pushear) y los dos de este plan `4458d65635` (H-01) y `3f6f0017ad` (F2-E).
+- La rama **no se ha pusheado nunca**: ningun remoto contiene `local-worker-opencode`. Si se fusiona a `main` tal como esta, entra tambien el commit de `jeiger-web`. Decision del Gate 2.
+- `main` es ancestro de `local-worker-opencode` (53 commits por delante), asi que la fusion seria un fast-forward. `main` local esta 2 commits adelante de `origin/main`, sin pushear.
 
 ## Mensaje de cierre
 

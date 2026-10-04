@@ -250,3 +250,71 @@ Los dos son **condiciones de la cuenta o de la organizacion**, no defectos de co
 ### Correccion de numeracion
 
 La tabla del informe de Auditoria numera F2-B-01..05 de forma propia: su "F2-B-02" (prompt largo) es el item F1-B-05 de esta Punch List, y su "F2-B-01" (prompt corto) es el F2-B-01 de aqui. Los IDs de la Punch List del plan son los normativos.
+
+## Tandas F2-D y F2-E (2026-10-03) — correccion de H-01 y de los errores silenciosos
+
+Dos tandas de Worker sobre `local-worker-opencode`, cada una con su brief en
+`../01-planes/2026-10-02-opencode-cli-cerebro-de-hermes-briefs/` (`f2-d.md`, `f2-e.md`) y su handoff
+(`.worktrees/local-worker-opencode/.handoff-f2-d.md`, `.handoff-f2-e.md`). El Orquestador no implementa
+codigo (`docs/00-estandar-agentes/02-roles-y-delegacion.md`).
+
+### F2-D — commit `4458d65635` (H-01)
+
+Un commit, dos archivos: `plugins/model-providers/opencode-cli/protocol.py` (+18) y
+`tests/plugins/model-providers/test_opencode_protocol.py` (+60). El arreglo: `_TURN_END_REASONS = {"stop"}`;
+un `step_finish` con otro `reason` (observado: `tool-calls`) no emite `done`. Un `reason` vacio o
+desconocido degrada a "sin `done`" — el bucle de Hermes sale cuando se acaba el stream y entrega el
+texto acumulado, nunca un corte prematuro. `usage` sigue siendo el del ultimo `step_finish`, sin sumar
+los pasos intermedios.
+
+**Verificacion propia del Orquestador** (no transcrita del Worker), con el codigo del worktree
+confirmado antes de correr:
+
+```
+$env:PYTHONPATH = "<worktree>"
+$ python -c "import agent.cli_brain as m; print(m.__file__)"
+D:\VICTOR\CLAUDE CODE\hermes_agent\.worktrees\local-worker-opencode\agent\cli_brain.py
+
+$ python hermes chat --provider opencode-cli -Q --max-turns 1 -m opencode-go/deepseek-v4-flash -q "Responde solo: ok"
+ok
+exit=0
+```
+
+Tests (los cuatro archivos del plan, runner del repo):
+
+```
+=== Summary: 4 files, 42 tests passed, 0 failed (100% complete) in 10.5s (12 workers) ===
+```
+
+### F2-E — commit `3f6f0017ad` (los errores de opencode se tragan en silencio)
+
+Con H-01 corregido, la llamada **sin** `-m` fallaba sin decir por que: Hermes pasa su modelo por
+defecto (`claude-sonnet-5`) como `--model`, opencode no lo conoce y emite un evento `type: "error"`
+que el parser descartaba, asi que el usuario veia "respuesta vacia". Un commit, dos archivos
+(`protocol.py` +16, test +59). El mensaje real de opencode esta en `error.data.message`, con
+`error.name` como respaldo; si no hay texto, se degrada a `"opencode reported an error"`, nunca a vacio.
+
+**Verificacion propia del Orquestador:**
+
+```
+$ python hermes chat --provider opencode-cli -Q --max-turns 1 -q "Responde solo: ok"
+OpenCode (OpenCode CLI) didn't answer after 3 attempts - it looks temporarily unavailable. ...
+Provider said: Unexpected server error. Check server logs for details.
+exit=1
+
+$ python hermes chat --provider opencode-cli -Q --max-turns 1 -m opencode-go/deepseek-v4-flash -q "Responde solo: ok"
+ok
+exit=0
+
+=== Summary: 4 files, 45 tests passed, 0 failed (100% complete) in 13.7s (12 workers) ===
+```
+
+### Lo que queda abierto: H-02
+
+La llamada sin `-m` sigue fallando, pero **ya no en silencio**: es la decision documentada en el plan
+§ H-02 (modelo por defecto de Hermes vs catalogo de opencode). El mensaje de opencode para un
+`--model` desconocido es generico y no nombra el modelo; eso lo decide opencode, no Hermes.
+
+Nota sobre la cuenta (dato de entorno, no de codigo): `openrouter/anthropic/claude-sonnet-5` dentro de
+opencode devuelve 402 "requires more credits"; `opencode-go/deepseek-v4-flash` responde. No se registro
+ninguna clave ni valor de variable de entorno.
