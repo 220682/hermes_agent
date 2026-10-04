@@ -59,15 +59,17 @@ Cada rol corre en su **propia sesion** de opencode CLI (`opencode run --model <m
 |---|---|---|---|---|
 | Orquestador | Sesion interactiva de opencode del Responsable humano | `planificacion` | N/A | Activo |
 | Planner | `opencode run --model opencode-go/qwen3.7-plus --dir <raiz del repo>` | `planificacion` | N/A | Plan entregado (2026-10-02) |
-| Worker F1-A (traslado) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Pendiente |
+| Worker F1-A (traslado) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Cerrada (2026-10-02) |
 | Worker F1-B (revision plugin) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Cerrada (2026-10-02) |
 | Worker F2-A (nucleo y superficie) | `opencode run --model opencode-go/qwen3.7-plus --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Cerrada (2026-10-02) |
 | Worker F2-B (verificacion real) | `opencode run --model opencode-go/qwen3.7-plus --dir .worktrees/local-worker-opencode` | `local-worker-opencode` | `.worktrees/local-worker-opencode` | Cerrada (2026-10-02) |
 | Documentador F3 (documentacion y limpieza) | `opencode run --model opencode-go/glm-5.3-flash --dir .worktrees/local-worker-opencode` | `local-worker-opencode` (codigo) / `planificacion` (docs del flujo) | `.worktrees/local-worker-opencode` | Cerrada (2026-10-02) |
 | Agente Git | â€” | â€” | â€” | **No usado en este plan** (decision D-12) |
-| Auditor | `opencode run --model opencode-go/qwen3.7-plus --dir <raiz del repo>` | `planificacion` | N/A | Pendiente |
+| Auditor | `opencode run --model opencode-go/qwen3.7-plus --dir <raiz del repo>` | `planificacion` | N/A | Cerrada (2026-10-03, informe en § Informe de Auditoria) |
 
 El `--dir` de cada tanda es su worktree: asi el brief, las pruebas y los comandos corren sobre la rama de la tanda, no sobre `planificacion`. La documentacion de proceso (flujo de negocio, apartados del plan) va a `planificacion`, que es la rama de los roles que no son Worker.
+
+Conteo real de sesiones (correccion del 2026-10-03, el plan contaba 5): **7** sesiones `opencode run` en total - F1-A, F1-B, F2-A, F2-B y F2-C (limpieza del import muerto, commit `166389b3fb`) en el worktree, mas F3 (Documentador) en `planificacion`, mas **F4-B** (`c36d14f4e1`, arreglos de `tsc` en `apps/jeiger-web`), que no estaba prevista en este plan y quedo fuera de su alcance y de su auditoria (ver § Estado real de la rama).
 
 ### Tabla de niveles y esfuerzo por fase/tanda
 
@@ -133,7 +135,9 @@ Alcance: verificar la implementacion completa contra la Spec del plan 2026-09-27
 
 ## Punch List embebida
 
-Estados: `Sin verificar` / `Conforme` / `Observado` / `No aplica`. La evidencia de cada item va en `../03-evidencia/2026-10-02-opencode-cli-cerebro-de-hermes.md`. El resultado esperado esta definido aqui antes de implementar; cada item se verifica en el entorno real.
+Estados: `Sin verificar` / `Conforme` / `Observado` / `No conforme` / `No aplica`. La evidencia de cada item va en `../03-evidencia/2026-10-02-opencode-cli-cerebro-de-hermes.md`. El resultado esperado esta definido aqui antes de implementar; cada item se verifica en el entorno real.
+
+> El estado `No conforme` se anadio el 2026-10-03: la lista original no lo tenia y hace falta para el ciclo de correccion del Gate 2 (ver H-01). Nota de numeracion: los IDs de esta Punch List son los normativos; la tabla del informe de Auditoria usa una numeracion propia para F2-B que no coincide con estos IDs.
 
 ### Estado de aprobacion
 
@@ -158,19 +162,19 @@ Ningun rol hace merge a `main`, push de ramas de trabajo ni borrado de archivos 
 | F1-B-07 | F1-B | `fallback_models=()` y `model_aliases={}` vacios: se verifica que OpenCode usa su modelo por defecto cuando no se pasa `--model`, y que no hay errores por listas vacias | Test o llamada real | Sin verificar |
 | F2-A-01 | F2-A | Ampliacion generica de `agent/cli_brain.py` documentada: los cambios para protocolos no-live (stdin DEVNULL, process exit handling) se justifican como genericos (compartidos con claude-cli, cursor, opencode-cli), no como logica especifica de OpenCode | Diff comentado o decision documentada | Sin verificar |
 | F2-A-02 | F2-A | `opencode-cli` aparece en `GET /api/providers/status` del dashboard (junto con `claude-cli` y `cursor`) | Respuesta del endpoint con token | Sin verificar |
-| F2-A-03 | F2-A | `hermes auth status opencode-cli` muestra "logged in" con los proveedores configurados, sin imprimir el correo ni el token | Salida del comando | Sin verificar |
+| F2-A-03 | F2-A | `hermes auth status opencode-cli` muestra "logged in" con los proveedores configurados, sin imprimir el correo ni el token | Salida del comando | Conforme (verificado 2026-10-03: `logged in (OpenCode Go)`) |
 | F2-A-04 | F2-A | `hermes auth add opencode-cli` lanza `opencode auth login` interactivo; `hermes auth logout opencode-cli` indica que use `opencode auth logout` | Salida de ambos comandos | Sin verificar |
 | F2-A-05 | F2-A | Paso de modelo: `hermes chat --provider opencode-cli --model openrouter/google/gemini-pro` pasa `--model openrouter/google/gemini-pro` al CLI; sin modelo, no pasa `--model` y OpenCode usa su default | Test de `build_argv` + llamada real | Sin verificar |
 | F2-A-06 | F2-A | `base_url=acp://opencode-cli` y `api_mode=chat_completions` no causan conflictos con el registro de proveedores existente | `providers.get_provider_profile("opencode-cli")` sin error | Sin verificar |
-| F2-B-01 | F2-B | Llamada de humo real: `hermes chat --provider opencode-cli -Q --max-turns 1 -q "Responde solo: ok"` responde sin error, sin imprimir credenciales | Transcripcion de la ejecucion | Sin verificar |
-| F2-B-02 | F2-B | Regresion: `hermes chat --provider claude-cli -Q --max-turns 1 -q "ok"` sigue respondiendo; `hermes chat --provider cursor` no se rompe | Salida de ambos comandos | Sin verificar |
+| F2-B-01 | F2-B | Llamada de humo real: `hermes chat --provider opencode-cli -Q --max-turns 1 -q "Responde solo: ok"` responde sin error, sin imprimir credenciales | Transcripcion de la ejecucion | **No conforme (2026-10-03, H-01): responde con texto vacio** |
+| F2-B-02 | F2-B | Regresion: `hermes chat --provider claude-cli -Q --max-turns 1 -q "ok"` sigue respondiendo; `hermes chat --provider cursor` no se rompe | Salida de ambos comandos | Sin verificar: no ejecutable en esta maquina (claude-cli bloqueado por la organizacion, cursor sin cupo). No es un defecto del plan |
 | F2-B-03 | F2-B | Suite de pruebas afectada verde: `tests/agent/test_cli_brain.py`, `tests/plugins/test_cli_brain_providers.py`, `tests/plugins/model-providers/test_opencode_protocol.py` con `scripts/run_tests.sh` | Salida del runner | Sin verificar |
 | F2-B-04 | F2-B | Sin secretos en el diff: ningun token, clave o credencial en `git diff local-worker-3..local-worker-opencode` | Busqueda de patrones | Sin verificar |
 | F2-B-05 | F2-B | Limites de uso de OpenCode documentados: lo que se sabe (multi-proveedor, el consumo depende del proveedor configurado en OpenCode) y lo no verificado se declara | Seccion en la evidencia | Sin verificar |
 | F3-01 | F3 | Flujo de negocio `01-cuentas-y-proveedores.md` actualizado con OpenCode: tercer proveedor, login propio del CLI, multi-proveedor, consumo segun la config de OpenCode | Contenido del archivo | Conforme (Documentador F3) |
 | F3-02 | F3 | Regla de negocio actualizada: OpenCode en la misma categoria que claude-cli y cursor (login propio, Hermes como arnes, sin guardar credenciales) | Contenido del archivo | Conforme (Documentador F3) |
 | F3-03 | F3 | Huerfanos conocidos registrados: 4 rutas untracked de `vpc/` y commits `debug(...)` del trabajo heredado (si sobreviven al rebase) | Apartado del plan | Conforme (Documentador F3) |
-| R-01 | T | `hermes doctor` sin errores nuevos relacionados con opencode-cli | Salida del comando | Sin verificar |
+| R-01 | T | `hermes doctor` sin errores nuevos relacionados con opencode-cli | Salida del comando | Conforme con salvedad (2026-10-03: corre completo; sus 6 issues son de entorno y anteriores al plan; ninguna mencion a opencode-cli) |
 | T-01 | T | Sin secretos: ningun token de OpenCode, OpenRouter, Anthropic ni OpenAI en el diff, los registros ni la salida de los comandos | Busqueda de patrones | Sin verificar |
 
 ### Datos y calculos
@@ -191,8 +195,8 @@ No aplica: el plan no toca interfaz.
 
 | ID | Fase | Item | Evidencia minima | Estado |
 |---|---|---|---|---|
-| E-01 | F2 | `hermes auth status opencode-cli` con OpenCode ausente del PATH: mensaje claro con la instruccion de instalacion, no una traza | Salida del caso | Sin verificar |
-| E-02 | F2 | `hermes auth status opencode-cli` sin login: mensaje con `opencode auth login`, no una traza | Salida del caso | Sin verificar |
+| E-01 | F2 | `hermes auth status opencode-cli` con OpenCode ausente del PATH: mensaje claro con la instruccion de instalacion, no una traza | Salida del caso | Conforme (2026-10-03: `BrainError: Could not start '...'. Install the opencode-cli CLI.`) |
+| E-02 | F2 | `hermes auth status opencode-cli` sin login: mensaje con `opencode auth login`, no una traza | Salida del caso | Conforme (2026-10-03, con un binario simulado de salida vacia para no tocar la credencial real) |
 
 ### Validacion en servidor / API
 
@@ -442,6 +446,50 @@ No aplica: no se identifico un patron repetido que merezca un procedimiento reus
 - La modificacion al nucleo (`cli_brain.py`) esta justificada como ampliacion generica para protocolos non-live.
 - No hay secretos, codigo muerto funcional ni infraestructura especulativa en el diff.
 - Los 3 puntos a decision del Responsable (APLICAR AHORA #1, PROPONER A RESPONSABLE #1 y #2) no bloquean el Gate 2 pero deben resolverse antes del merge a `main`.
+
+## Re-ejecucion de los items pendientes (2026-10-03, Orquestador)
+
+El Auditor dejo 6 items "pendiente de re-ejecucion" porque requieren el binario real o la cuenta del usuario. El Orquestador los re-ejecuto con salida propia el 2026-10-03. Salidas literales en `../03-evidencia/2026-10-02-opencode-cli-cerebro-de-hermes.md` § "Re-ejecucion del 2026-10-03 (Orquestador)".
+
+| ID | Que se observo | Veredicto |
+|---|---|---|
+| F2-A-03 `hermes auth status opencode-cli` | `opencode-cli: logged in (OpenCode Go)` | **Verificado** |
+| F2-B-01 llamada real con prompt corto | **Devuelve texto vacio** (exit 1, sin respuesta) | **No conforme - bloqueante (H-01)** |
+| R-01 `hermes doctor` | Corre completo; 6 issues, todos de entorno y previos al plan; ninguna mencion a opencode-cli | **Verificado con salvedad** |
+| R-02 regresion `claude-cli` / `cursor` | `claude-cli`: la organizacion deshabilito el acceso a la suscripcion. `cursor`: cupo de agente agotado | **No verificable en esta maquina** (motivo de entorno, no de codigo) |
+| E-01 binario ausente | `BrainError: Could not start '...'. Install the opencode-cli CLI.` | **Verificado** |
+| E-02 sin login | `opencode-cli: logged out` + `Run \`opencode auth login\` to sign in with your OpenCode account.` | **Verificado** (con un binario simulado de salida vacia, para no tocar la credencial real) |
+
+### H-01 (bloqueante) - el turno se corta en el primer `step_finish`
+
+`opencode run --format json` emite **un `step_finish` por paso**, no solo al final. Secuencia real capturada con el mismo argv, el mismo entorno y el mismo cwd que usa Hermes:
+
+```
+[0] step_start
+[1] tool_use      (opencode lee con su propia herramienta el archivo de instrucciones que Hermes le pasa)
+[2] step_finish   reason=tool-calls      <-- aqui Hermes da el turno por terminado
+[3] step_start
+[4] text          "GATE2_OK"
+[5] step_finish   reason=stop
+```
+
+- `OpenCodeProtocol.parse_line` convierte **todo** `step_finish` en `BrainEvent("done")` (`plugins/model-providers/opencode-cli/protocol.py`, rama `local-worker-opencode`).
+- `_Session.turn` termina el turno en el primer `done` y mata el proceso (`agent/cli_brain.py`: `finished = finished or event.kind in ("done", "error")` y el `if not live: self.kill()`).
+- Resultado: cuando opencode usa cualquiera de sus propias herramientas en un paso -que es justo lo que hace para leer el archivo de instrucciones que Hermes le entrega- Hermes corta el turno **antes** de la respuesta y devuelve texto vacio.
+- Verificado por tres caminos: `CliBrainClient` con `stream=True` (0 chunks de texto), con `stream=False` (`content=None`) y el comando literal del plan `hermes chat --provider opencode-cli -Q --max-turns 1 -q "Responde solo: ok"` (imprime solo `session_id`, exit 1, sin respuesta).
+
+**Por que las verificaciones anteriores no lo detectaron:** las dos llamadas de humo (la del Worker F2-B y la del Auditor en F2-B-02) invocaron el binario directamente con `subprocess`, que espera a que el proceso termine y por tanto si ve la respuesta. El corte ocurre un nivel mas arriba, en el bucle de Hermes.
+
+**Alcance:** es especifico de `opencode-cli`. `claude-cli` es `live = True` y entrega un unico evento `result`; `cursor` solo entrega `done` con `result`. Ninguno de los dos tiene este defecto y el motor compartido no se toca.
+
+**Arreglo propuesto (para un Worker; el Orquestador no implementa):** en `parse_line`, no emitir `done` por un `step_finish` cuyo `reason` no sea el de fin de turno. Los unicos valores observados en esta maquina son `tool-calls` y `stop`; antes de fijar la lista hay que comprobar con el CLI si existen mas. Revisar ademas que `usage` se reporte una sola vez (el del ultimo `step_finish`) y anadir el caso a `tests/plugins/model-providers/test_opencode_protocol.py`.
+
+**Efecto sobre el Gate 2:** mientras H-01 siga abierto, F2-B-01 no es Conforme y el Gate 2 no puede approvingse. El informe del Auditor (22 items verificados) se sustenta en llamadas directas al binario, no en el camino real de Hermes.
+
+### Estado real de la rama (2026-10-03)
+
+- HEAD de `local-worker-opencode`: **`c36d14f4e1`**, no `166389b3fb` como decia el informe. Hay un commit mas: `fix(jeiger-web): resolve 4 tsc -b build errors`, **fuera del alcance de este plan**, sin auditar y sin pushear (ningun remoto lo contiene). Si se fusiona esta rama a `main`, entra tambien ese commit. Decision del Gate 2.
+- `main` es ancestro de `local-worker-opencode` (51 commits por delante), asi que la fusion seria un fast-forward.
 
 ## Mensaje de cierre
 

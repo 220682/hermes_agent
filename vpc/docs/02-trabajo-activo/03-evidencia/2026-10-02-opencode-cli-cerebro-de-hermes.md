@@ -122,3 +122,131 @@ Sobre `git diff local-worker-3..local-worker-opencode` (9 archivos, 561 insercio
 - Limite del uso/a los costos concretos dentro de OpenCode: no verificado y no se declara. Lo documentado en el flujo es la regla general: el consumo depende del proveedor configurado dentro de OpenCode, no de un nivel de plan de Hermes.
 - La coherencia **estatica** de `agent/cli_brain.py` esta probada (AST, inspeccion, tests). La coherencia de **runtime** con el turn loop quedo cubierta por las llamadas reales de humo de F2-B (ver arriba); no se re-ejecutaron en esta tanda (quedan como transcripcion del dato verificado).
 - El entorno de pruebas se creo en el checkout principal con `python -m pm.build_env --source . --out .venv --group dev --group test` (`.venv` esta en `.gitignore` y no aparece en el estado del repositorio). La tanda F3 lo uso tal cual con `HERMES_PYTHON`, sin reconstruir nada.
+
+## Re-ejecucion del 2026-10-03 (Orquestador)
+
+Salidas propias de los 6 items que el Auditor dejo pendientes. Todo se ejecuto con el codigo del worktree, no del checkout principal: el `.venv` tiene una instalacion editable que apunta al checkout principal, asi que se verifico que `PYTHONPATH` con el worktree gana en `sys.path` antes de correr nada.
+
+```
+$env:PYTHONPATH = "D:\VICTOR\CLAUDE CODE\hermes_agent\.worktrees\local-worker-opencode"
+& "D:\VICTOR\CLAUDE CODE\hermes_agent\.venv\Scripts\python.exe" -c "import agent.cli_brain as m; print(m.__file__)"
+D:\VICTOR\CLAUDE CODE\hermes_agent\.worktrees\local-worker-opencode\agent\cli_brain.py
+```
+
+### F2-A-03 — `hermes auth status opencode-cli` (real)
+
+```
+opencode-cli: logged in (OpenCode Go)
+setup_status -> {"available": true, "logged_in": true, "plan": "OpenCode Go", "detail": "signed in",
+                 "login_command": "opencode auth login"}
+```
+
+Sin correo ni token en la salida. **Conforme.**
+
+### F2-B-01 — llamada real con prompt corto: **NO CONFORME (H-01)**
+
+Via `CliBrainClient` (`stream=False`), con el `opencode.CMD` real y la cuenta del usuario:
+
+```
+command resuelto: C:\Users\BRANDY\AppData\Roaming\npm\opencode.CMD
+texto recibido (8.1s): None
+contiene la palabra de control: False
+```
+
+Con `stream=True` se ven los chunks:
+
+```
+chunk1: content=None reasoning='' finish='stop'
+usage: namespace(prompt_tokens=13986, completion_tokens=51, total_tokens=14037, ...)
+chunks: 2
+```
+
+Comando literal de la Punch List:
+
+```
+$ python hermes chat --provider opencode-cli -Q --max-turns 1 -q "Responde solo: ok"
+session_id: 20261003_220545_aeba32
+exit=1
+```
+
+Sin texto de respuesta. **Causa (H-01):** `opencode run --format json` emite un `step_finish` por paso. Secuencia cruda capturada con el mismo argv, entorno y cwd que usa Hermes:
+
+```
+idx | type           | reason       | texto
+  0 | step_start    |              |
+  1 | tool_use      |              | read        (lee el archivo de instrucciones que Hermes le pasa)
+  2 | step_finish   | tool-calls   |            <-- Hermes da el turno por terminado aqui
+  3 | step_start    |              |
+  4 | text          |              | GATE2_OK
+  5 | step_finish   | stop         |
+```
+
+Lineas crudas que llegaron al parser por el camino de Hermes (3 de 6):
+
+```
+[0] {"type":"step_start",...}
+[1] {"type":"tool_use","part":{"type":"tool","tool":"read","state":{"status":"completed",
+     "input":{"filePath":"...\\hermes-brain-w3s2d77z\\instructions.txt"}}}}
+[2] {"type":"step_finish","part":{"reason":"tool-calls",...}}
+```
+
+`OpenCodeProtocol.parse_line` mapea **todo** `step_finish` a `BrainEvent("done")`; `_Session.turn` cierra el turno en el primer `done` y mata el proceso. La respuesta nunca llega a Hermes.
+
+### R-01 — `hermes doctor` (real)
+
+Corre de punta a punta. Sus 6 issues son de entorno y anteriores a este plan; **no hay ninguna mencion a opencode-cli**:
+
+```
+✗ ~/AppData/Local/hermes/.env file missing            -> Run 'hermes setup' to create one
+⚠ Config version outdated (v0 -> v46)
+⚠ python-telegram-bot / discord.py (optional, not installed)
+⚠ Browser tools (agent-browser) deps (0 critical, 3 high, ...) -> fix is an upstream lockfile bump
+? web / ui-tui workspace deps
+Found 6 issue(s) to address
+```
+
+**Conforme con salvedad:** el comando sale con codigo 1 por esos 6 puntos, ninguno del alcance del plan.
+
+### E-01 — binario ausente
+
+```
+BrainError status=None: Could not start
+'C:\...\opencode-no-existe-xyz'. Install the opencode-cli CLI.
+```
+
+Sin traza. **Conforme.**
+
+### E-02 — sin login
+
+Con un `.cmd` simulado que imprime nada (no se toca la credencial real del usuario):
+
+```
+setup_status -> {"available": true, "logged_in": false, "plan": "", "detail": "not signed in",
+                 "login_command": "opencode auth login"}
+opencode-cli: logged out
+  Run `opencode auth login` to sign in with your OpenCode account.
+```
+
+**Conforme.**
+
+### R-02 / F2-B-02 — regresion `claude-cli` y `cursor`: no ejecutable en esta maquina
+
+```
+claude-cli: BrainError: Your organization has disabled Claude subscription access for Claude Code
+            · Use an Anthropic API key instead, or ask your admin to enable access
+cursor:     texto (12.0s): None  | finish: stop
+```
+
+Causa del vacio de cursor, en la salida cruda del CLI:
+
+```
+[0] type=system subtype=init
+[1] type=user  -> 'Read the file input.md in the workspace and follow it exactly...'
+stderr: ActionRequiredError: You've hit your usage limit Get Cursor Pro for more Agent usage...
+```
+
+Los dos son **condiciones de la cuenta o de la organizacion**, no defectos de codigo: ambos perfiles reportan `logged_in` correcto. La evidencia de regresion a nivel de motor sigue siendo la suite (`tests/agent/test_cli_brain.py` 6/6, `tests/plugins/test_cli_brain_providers.py` 15/15). Se deja como pendiente no ejecutable, no como Conforme.
+
+### Correccion de numeracion
+
+La tabla del informe de Auditoria numera F2-B-01..05 de forma propia: su "F2-B-02" (prompt largo) es el item F1-B-05 de esta Punch List, y su "F2-B-01" (prompt corto) es el F2-B-01 de aqui. Los IDs de la Punch List del plan son los normativos.
