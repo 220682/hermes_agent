@@ -133,7 +133,7 @@ Gate 2 del Responsable humano. Con lo que hay que resolverlo: el plan § H-01 (c
 
 ## Ultima actualizacion y responsable
 
-2026-10-03, Orquestador (re-ejecucion de los 6 items pendientes, hallazgo H-01, dos tandas de Worker para corregirlo —F2-D `4458d65635` y F2-E `3f6f0017ad`—, verificacion propia de ambas, y H-02 documentado como decision del Gate 2; sin merge, sin push de la rama del Worker).
+2026-10-03, Orquestador — **sesion cerrada**. Cierre de sesion: re-ejecucion de los 6 items pendientes del informe de Auditoria; hallazgo H-01 (el turno se cortaba en el primer `step_finish`) y su correccion en dos tandas de Worker (F2-D `4458d65635`, F2-E `3f6f0017ad`), verificadas con salida propia (45/45 tests y llamada real respondiendo `ok`, exit 0); H-02 documentado como decision del Gate 2; tres mejoras de trabajo trasladadas a `03-aprendizaje-continuo/historico.md`; dos defectos de texto corregidos en archivos de proceso. **Sin merge, sin push de la rama del Worker, sin tocar `main`.** El plan queda **listo para Gate 2**, no cerrado: el cierre formal lo autoriza el Responsable humano.
 
 ## Handoffs
 

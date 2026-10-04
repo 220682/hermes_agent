@@ -96,7 +96,7 @@ Formato de cada entrada: `../00-estandar-agentes/06-plantillas/08-aprendizaje.md
 
 ## 2026-10-02 — La receta completa para correr tests en Windows desde un worktree `[tests]` `[worktree]` `[windows]`
 
-- **Origen:** plan `2026-10-02-opencode-cli-cerebro-de-hermes`, tanda F1-A (que la 页贯通 como bloqueo) y cierre.
+- **Origen:** plan `2026-10-02-opencode-cli-cerebro-de-hermes`, tanda F1-A (que la dejó como bloqueo) y cierre.
 - **Problema:** la entrada del 2026-09-29 dice usar `HERMES_PYTHON`, pero no basta en Windows: `bash` no está en `PATH`, y sin el intérprete apuntando al `.venv` del **checkout principal** la activación de PM falla con `activate: no bootstrap Python found` aunque PM termine de instalar las dependencias. Un Worker cerró una tanda entera sin poder verificar nada por esto.
 - **Causa:** el runner es un script bash y la máquina no expone bash en el PATH; y cada worktree no tiene su propio `.venv`, así que la activación de PM no encuentra intérprete.
 - **Cómo se resolvió:** dos pasos. (1) Construir **una sola vez** el intérprete en el checkout principal: `python -m pm.build_env --source . --out .venv --group dev --group test` (`.venv` está en `.gitignore`; si ya existe, `pm.build_env` se niega a sobrescribirlo). (2) En cada worktree, invocar Git Bash por ruta absoluta y apuntar `HERMES_PYTHON` al `.venv` del checkout principal:
@@ -126,4 +126,39 @@ Formato de cada entrada: `../00-estandar-agentes/06-plantillas/08-aprendizaje.md
 - **Cómo se resolvió:** guardar en `localStorage` (con `try/catch`) el identificador que acepta `session.resume`, reanudar al conectar, y añadir un botón "Nueva conversación".
 - **Resultado:** el arnés recargó la página y el agente respondió el dato (`history=4` en `agent.log`).
 - **Cuándo reutilizarla:** al diseñar cualquier cliente con sesión larga contra un backend que conserve el estado.
+- **Reemplaza a:** ninguna.
+
+## 2026-10-03 — La evidencia de un cerebro CLI tiene que salir por el camino real, no de una llamada directa al binario `[tests]` `[agentes]`
+
+- **Origen:** plan `2026-10-02-opencode-cli-cerebro-de-hermes`, Auditoría y hallazgo H-01.
+- **Problema:** el plan dio por Conforme la llamada de humo real a `opencode` dos veces (Worker F2-B y Auditor F2-B-02) y ambas pasaron, pero la llamada por el camino real de Hermes devolvía texto vacío. El Gate 2 se llegó a aprobar con ese veredicto.
+- **Causa:** las dos verificaciones invocaron el binario con `subprocess`, que **espera a que el proceso termine** y por tanto ve la respuesta completa. El defecto estaba un nivel más arriba, en el bucle de Hermes: `opencode run --format json` emite un `step_finish` **por paso**, no solo al final; el protocolo mapeaba todo `step_finish` a `done` y el motor cerraba el turno en el primero y mataba el proceso, justo después de que opencode usa su herramienta `read` para leer el archivo de instrucciones.
+- **Cómo se resolvió:** brief F2-D para el Worker (`parse_line` solo emite `done` con `reason == "stop"`; reason vacío o desconocido degrada a "sin `done`", nunca a corte prematuro), commit `4458d65635`. El criterio de cierre del brief era explícito: la evidencia sale del comando literal de la Punch List, y si devuelve texto vacío el ítem no está cerrado.
+- **Resultado:** `hermes chat --provider opencode-cli -Q --max-turns 1 -m opencode-go/deepseek-v4-flash -q "Responde solo: ok"` → `ok`, exit 0; 45/45 tests verdes. El bug estaba activo desde el rebase original y dos verificaciones lo dejaron pasar.
+- **Cuándo reutilizarla:** siempre que se verifique un "cerebro" externo (CLI, MCP, proceso) integrado en un bucle de turnos. La llamada directa al binario **no** es evidencia de la integración.
+- **Reemplaza a:** ninguna.
+
+## 2026-10-03 — Con instalación editable, `PYTHONPATH` no basta: hay que verificar `__file__` `[tests]` `[entorno]`
+
+- **Origen:** mismo plan, preparation de las tandas F2-D y F2-E.
+- **Problema:** el `.venv` de este repo tiene el paquete instalado en modo editable apuntando al **checkout principal**. Ejecutar `hermes`, un test o el CLI desde un worktree parece ejecutar el código de la rama y en realidad ejecuta `main`.
+- **Causa:** el finder de la instalación editable resuelve los módulos por ruta absoluta; el orden de `sys.meta_path` hace que un `PYTHONPATH` con el worktree gane, pero eso hay que **comprobarlo**, no suponerlo.
+- **Cómo se resolvió:** anteponer el worktree con `PYTHONPATH` y, antes de cualquier medición, imprimir la ruta del módulo que se va a ejercitar:
+  ```
+  $env:PYTHONPATH = "<worktree>"
+  python -c "import agent.cli_brain as m; print(m.__file__)"
+  ```
+  Si la ruta no es la del worktree, la verificación se está haciendo sobre `main`.
+- **Resultado:** impreso en cada tanda y en la evidencia; en este repo la ruta sale del worktree y las verificaciones son válidas.
+- **Cuándo reutilizarla:** en cualquier repo con `pip install -e .` y worktrees o ramas de trabajo.
+- **Reemplaza a:** ninguna.
+
+## 2026-10-03 — Un evento de "fin" por paso no marca el fin del turno: comprobar el stream real antes de escribir el parser `[tests]` `[protocolos]`
+
+- **Origen:** mismo plan, F2-D.
+- **Problema:** el parser asumía que `step_finish` cerraba el turno porque así se llamaba; el nombre del evento describía el paso, no el turno.
+- **Causa:** el protocolo se escribio contra la suposición, no contra la salida real del CLI.
+- **Cómo se resolvió:** antes de fijar la lista de razones, capturar el stream crudo con el mismo argv, entorno y cwd que usa el agente, y enumerar los eventos con su `reason`. Se verificaron dos valores en esta máquina: `tool-calls` (fin de paso) y `stop` (fin de turno). El resto se dejó **fuera** de la lista a propósito, con el comportamiento de degradación escrito en el código: un `reason` desconocido no cierra el turno.
+- **Resultado:** el parser no corta turnos y el comentario del código dice qué está verificado y qué no.
+- **Cuándo reutilizarla:** ante cualquier CLI que emita JSON por líneas (eventos de agente, de build, de tests).
 - **Reemplaza a:** ninguna.
