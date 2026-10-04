@@ -58,6 +58,10 @@ Se llena en el momento en que ocurre cada hallazgo, no al cerrar. "Ninguna" si n
 
 Se llena en el momento en que ocurre cada hallazgo. "Ninguna" si no aplica.
 
+## Observaciones sobre la política
+
+Un fallo, hueco o contradicción **del proceso mismo** (estándar de agentes, `AGENTS.md`, Skills), no del sistema que se está construyendo. Se llena en el momento en que ocurre. "Ninguna" si no aplica. **Nadie las edita por su cuenta:** el Auditor las clasifica y el Responsable humano decide en el Gate 2.
+
 ## Carpetas/archivos huérfanos
 
 Se llena en el momento en que ocurre cada hallazgo. "Ninguno" si no aplica.

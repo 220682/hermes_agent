@@ -1,6 +1,6 @@
 # Medición y eficiencia — <tema del plan>
 
-> La tabla «Sesiones» vive en la sección «Medición» del archivo de progreso y la llena el Orquestador durante el plan. Los apartados «Resultados» y «Mejoras propuestas» los llena el Analista del flujo después del cierre y se guardan en `02-trabajo-activo/05-eficiencia/YYYY-MM-DD-<tema>.md`.
+> La tabla «Sesiones» vive en la sección «Medición» del archivo de progreso y la llena el Orquestador durante el plan. Los apartados «Resultados» y «Mejoras propuestas» se llenan al cierre, cuando el dato ya está: en este repositorio van en el informe de Auditoría o, si Victor lo pide, en un informe aparte; en un repositorio que tenga el rol de Analista del flujo, van a su informe. Nada de esto es obligatorio: el archivo se crea solo si el plan mide.
 
 ## Sesiones
 
