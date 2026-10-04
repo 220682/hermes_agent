@@ -6,8 +6,9 @@ Un hallazgo durante un plan puede ser una de estas cosas — nunca se mezclan:
 
 | Categoría | Qué es | Dónde vive |
 |---|---|---|
-| **Hallazgo** | Cualquier observación registrada en el momento en que ocurre, antes de clasificarla. | El progreso o el plan de la tarea activa, en el apartado que corresponda. |
+| **Hallazgo** | Cualquier observación registrada en el momento en que ocurre, antes de clasificarla. | El libro de hallazgos del plan de la tarea activa: los tres apartados de `02-plan.md` (`Mejoras (de trabajo)`, `Reglas de negocio acordadas`, `Carpetas/archivos huérfanos`). |
 | **Mejora de trabajo / aprendizaje** | Un aprendizaje sobre **cómo se trabaja** (método, herramientas, workarounds operativos) — no una regla del sistema que se está construyendo. | Una entrada en `03-aprendizaje-continuo/historico.md`, escrita solo cuando ya dio resultado. |
+| **Observación sobre la política** | Un fallo, hueco o contradicción del proceso mismo (estándar, `AGENTS.md`, Skills). No es una regla del sistema ni un aprendizaje de método: es un defecto de la política. | Apartado «Observaciones sobre la política» del plan; el Auditor la clasifica y el Responsable humano decide en el Gate 2. **Nadie la edita por su cuenta.** |
 | **Regla de negocio** | Una regla del sistema que se está construyendo (cómo se calcula, valida o comporta algo). | Directo en el flujo de negocio dueño de esa regla, integrada en su estructura — nunca como nota aparte. |
 | **Decisión pendiente** | Algo que el Responsable humano decide explícitamente postergar. | `planes-futuros.md` (o el archivo equivalente de trabajo pospuesto). |
 | **Evidencia** | El resultado verificado de un ítem de la Punch List. | El archivo de evidencia homónimo del plan. |
@@ -30,6 +31,8 @@ hallazgo (registrado en el momento) → clasificación → evidencia → auditor
 ```
 
 Una mejora de trabajo se escribe en `historico.md` solo cuando ya dio resultado, verificado con evidencia: escribirla equivale a que está aprobada. Lo que no funcionó o no se pudo verificar no se escribe ahí; queda como hallazgo en el progreso del plan. Ninguna otra fuente de verdad cambia sin que el Auditor lo proponga y el Gate 2 lo apruebe.
+
+No todo aprendizaje se promueve: una experiencia aislada, sin evidencia ni repetición, se registra pero no cambia ninguna fuente de verdad sin que el Auditor la proponga y el Gate 2 la apruebe.
 
 **El Worker nunca edita directamente una fuente de verdad central** (el estándar de agentes, la navegación general, la arquitectura del repositorio) por hallazgos propios: los deja anotados en el progreso para que el Auditor los evalúe. Una tarea puede recibir una excepción escrita y acotada cuando su objeto explícito es construir o modificar esa estructura — la excepción se declara en el propio plan, nunca se infiere.
 

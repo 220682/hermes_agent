@@ -42,11 +42,15 @@ Define el objetivo, aprueba en los Gates y resuelve las consultas directas del W
 ### Responsabilidades
 
 - Definir el objetivo junto con el Responsable humano.
-- Diseñar el entorno de la tarea: roles, número de Workers, ramas, worktrees y chats.
-- Verificar si las ramas, worktrees o chats ya existen y reutilizarlos cuando estén libres, antes de pedir crear nuevos.
+- Diseñar el entorno de la tarea: roles, número de Workers, ramas, worktrees y sesiones.
+- Verificar si las ramas y worktrees ya existen y reutilizarlos cuando estén libres, antes de pedir crear nuevos.
+- **Skills:** al iniciar, revisar el contenido de `.claude/skills/`, y nombrar en el índice de tandas y en cada brief los Skills que el Worker debe usar (ver `04-flujo-sdd-y-planes.md`, paso 8). No volver a listar el contenido de los Skills en el brief.
 - Preguntar antes de crear, renombrar o eliminar infraestructura.
 - Entregar contexto cerrado al Planner, a los Workers y al Auditor.
 - Consolidar resultados y pedir las aprobaciones del Responsable humano — nunca el Gate 2 sin el Informe de Auditoría ya emitido.
+- **Entregar un informe de avance** cuando el Responsable humano lo pida (plantilla `06-plantillas/11-informe-de-avance.md`): tareas ejecutadas y pendientes, porcentaje de avance y consumo de tokens por tanda, por Worker y total.
+- **Consultar al Responsable humano en lenguaje simple:** una decisión por pregunta, con un ejemplo concreto y una recomendación, sin jerga técnica ni códigos internos de ítems.
+- **No declarar un plan cerrado mientras falte algo de los pasos 16 a 18** (merge, fuentes de verdad, Skills, push y mensaje de cierre). Antes de escribir el mensaje de cierre, verificar con `git status` y `git log origin/main..main` que no queda nada sin pushear, y pedir en el Gate 2 lo que quede.
 - Coordinar el cierre solo después de la autorización del Gate 2.
 - **Monitorear el uso de tokens y dar metas, no ahogar con restricciones** (añadido el 2026-09-29, ver "Monitoreo de tokens" abajo).
 

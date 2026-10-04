@@ -60,6 +60,20 @@ Todo el trabajo ocurre en un único repositorio, en estas ramas:
 
 Las únicas flechas que "suben" son cuando el Responsable humano dice **No** en un Gate.
 
+**Verificador de acciones (borrador por probar).** Antes de las acciones 16a y 16b, de borrar o crear ramas y worktrees, de aplicar migraciones y antes de escribir el mensaje del paso 17, se consulta al verificador según `07-verificador-de-acciones.md`. Solo veta; no reemplaza los Gates ni los comandos de verificación.
+
+**Versión visual e interactiva de este flujo:** artefacto «Flujo SDD a Cierre» - https://claude.ai/artifact/8Wq3QsjFfiNs8YSs5T1gjd. Recorre los pasos con sus roles y los dos Gates, y muestra que un «No» vuelve al paso anterior. Es una ayuda derivada: si difiere de este documento, manda este documento.
+
+## Convención de autorizaciones
+
+Qué cubre cada puerta y qué acción tiene. La tabla canónica de acciones y su Gate está en `01-principios-y-seguridad.md` § Acciones que requieren autorización; esta sección explica el criterio con que se asigna una acción a una puerta:
+
+- **Gate 1** cubre el trabajo de implementación completo del plan y la documentación de proceso en `planificacion` (plan, progreso, evidencia, hallazgos), dentro del alcance que Victor aprobó. También cubre la instalación de software que el plan declara.
+- **Gate 2** cubre lo que sale del alcance del plan hacia la rama principal: el merge de la rama del Worker a `main`, el merge de `planificacion` a `main`, los cambios a fuentes de verdad centrales y la creación de un Skill. Los dos últimos solo si el Auditor los propuso.
+- **Fuera de los Gates, autorización explícita del Responsable humano:** borrar o renombrar un archivo, crear o eliminar una rama o un worktree, migraciones destructivas, cambios de infraestructura y cualquier acción externa (publicación, correo, pago).
+- **Nunca por iniciativa propia:** ninguna de las anteriores. Ante la duda, la acción se suspende y se pregunta; no se improvisa un Gate nuevo.
+- **El verificador de acciones veta, no autoriza.** Que apruebe no sustituye la puerta que corresponde.
+
 ## Tabla — quién hace qué, en qué rama, y qué pasa en Git
 
 Columna "Qué debe leer antes": ver la regla de lectura mínima más abajo. **Excepción de lectura por rol (D10):** el Orquestador, el Planner y el Auditor leen todos los flujos de negocio del repositorio; el Worker lee solo los que el plan indica afectados por su parte.

@@ -12,6 +12,10 @@ Qué leer según tu rol y el tipo de solicitud. No leas la carpeta completa por 
 | Implementación (Worker) | `04-flujo-sdd-y-planes.md` (pasos 8–11) + `02-roles-y-delegacion.md` § Worker + solo los flujos de negocio que tu parte toca + `05-diseno-y-ui.md` del contexto del repositorio si es UI. |
 | Auditoría | `04-flujo-sdd-y-planes.md` (paso 12) + `06-plantillas/06-informe-auditoria.md` + **todos** los flujos de negocio afectados por el plan. |
 | Cierre / handoff | `04-flujo-sdd-y-planes.md` (pasos 13–18) + `03-sesiones-contexto-y-handoff.md` + `06-plantillas/07-handoff.md` o `06-plantillas/09-cierre.md` según corresponda. |
+| Plan por tandas (> 15 ítems) | `03-sesiones-contexto-y-handoff.md` § Planes grandes en tandas + `06-plantillas/13-brief-de-tandas.md` (brief) y `06-plantillas/12-resumen-de-cierre-de-tandas.md` (cierre de tanda) + `06-plantillas/10-medicion-y-eficiencia.md` (medición). |
+| Relevo del Orquestador | `03-sesiones-contexto-y-handoff.md` § Compactar contexto + `06-plantillas/14-prompt-de-relevo.md`. |
+| Informe de avance pedido por Victor | `06-plantillas/11-informe-de-avance.md`. |
+| Acción irreversible (merge, push, borrar, migrar, ramas) | `01-principios-y-seguridad.md` § Acciones que requieren autorización + `04-flujo-sdd-y-planes.md` § Convención de autorizaciones + `07-verificador-de-acciones.md`. |
 
 ## Tabla de lectura mínima por rol y paso
 

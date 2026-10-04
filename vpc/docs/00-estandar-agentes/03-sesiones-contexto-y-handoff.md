@@ -9,6 +9,8 @@
 
 ## Nombres de chats
 
+**El estándar no depende de nombres de chat ni de una aplicación concreta.** El Orquestador lanza cada sesión con la descripción de **rol, tarea y tanda** (por ejemplo «Worker F2-A»), de modo que el registro permita agrupar y medir después aunque la herramienta no permita nombrar sesiones. En este repo el nombre es una convención ayuda, no un requisito: si la herramienta no lo expone, se usa la descripción del lanzamiento.
+
 Patrón sugerido, adaptable a la herramienta de sesiones disponible en cada entorno:
 
 ```text
@@ -19,7 +21,7 @@ Patrón sugerido, adaptable a la herramienta de sesiones disponible en cada ento
 - `jerarquía`: número fijo por rol, para que el listado quede ordenado (ej. `1` Orquestador, `2` Planner, `3` Worker, `4` Auditor).
 - `tarea`: slug corto de la tarea.
 - Si hay más de un Worker en la misma tarea, se diferencian por fase de esa tarea, no por número de worker (`<tarea>-fase1`, `<tarea>-fase2`).
-- **Crear un chat nuevo (Planner, Worker, Auditor) es autónomo del Orquestador:** no es "crear infraestructura" en el sentido que requiere autorización — es abrir el espacio de trabajo que el plan ya aprobado definió.
+- **Crear un chat nuevo (Planner, Worker, Auditor) es autónomo del Orquestador:** no es "crear infraestructura" en el sentido que requiere autorización — es abrir el espacio de trabajo que el plan ya aprobó definió.
 
 ## Inicio de cada chat
 
@@ -31,6 +33,20 @@ El primer mensaje debe contener solo:
 - Documentos que debe leer (ver `00-indice.md`).
 - Criterios de salida.
 - Restricciones.
+- Skills que debe usar, si el Orquestador los nombra (ver `04-flujo-sdd-y-planes.md`).
+
+**Skills, antes de empezar.** El brief **nombra** los Skills de la tanda (ver `04-flujo-sdd-y-planes.md`, paso 8) y el agente abre el `SKILL.md` de esos. **No vuelve a listar el contenido de `.claude/skills/`**: la herramienta ya publica en su bloque de Skills la lista disponible, y repetirla son dos llamadas y una lista duplicada por agente, sin valor. Si entre los Skills disponibles hay uno que aplica y el brief no nombró, el agente lo usa y lo anota. Si ninguno aplica, anota en el progreso del plan «Skills revisados: ninguno aplica» con una frase de motivo. Ese es todo el trabajo de Skills que se pide antes de empezar.
+
+## Planes grandes en tandas
+
+Un plan de más de unos 15 ítems, o de una fase completa, se reparte en tandas de 4 a 8 ítems:
+
+- Un Worker nuevo por tanda, con un brief de 8 KB como máximo y un tope de unas 80 llamadas.
+- El Worker lee solo lo que el brief nombra (busca por ID en vez de leer el plan completo).
+- Cada tanda se marca en el índice de tandas como **paralelizable** (documentación o código puro, sin navegador) o **usa el navegador** (se ejecutan una a una: dos tandas con navegador nunca corren a la vez).
+- Se mide cada sesión (llamadas, contexto máximo, caché leída) y se guarda en un archivo de medición.
+- Antes de declarar terminada su tanda, cada Worker entrega su resumen de cierre en un archivo propio por tanda (plantilla `06-plantillas/12-resumen-de-cierre-de-tandas.md`: estado de sus ítems, evidencia y hallazgos) y no edita los archivos compartidos del plan.
+- **Manejo de los hallazgos de cada Worker.** El resumen de cierre tiene secciones fijas: estado de los ítems de la tanda con su evidencia; hallazgos clasificados (mejora de trabajo, regla de negocio acordada, observación sobre la política, archivo o carpeta huérfano, conflicto con un flujo o pregunta para el Responsable humano); traspaso; llamadas y contexto usado; y «Skills revisados». Una pregunta de negocio o un conflicto con un flujo **no espera al cierre**: el Worker se detiene, se la devuelve al Orquestador en el momento y la registra con la respuesta. Ningún Worker borra nada por su cuenta.
 
 ## Cierre de cada chat
 

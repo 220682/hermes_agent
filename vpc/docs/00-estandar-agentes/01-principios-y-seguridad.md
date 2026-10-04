@@ -24,7 +24,7 @@ Esto aplica a cualquier hecho técnico verificable, no solo a nombres de entorno
 
 ## Acciones que requieren autorización
 
-Ninguna de estas acciones se ejecuta por iniciativa propia de un agente; cada una queda cubierta por el Gate que corresponde (ver la tabla de pasos de `04-flujo-sdd-y-planes.md`):
+Ninguna de estas acciones se ejecuta por iniciativa propia de un agente; cada una queda cubierta por el Gate que corresponde (ver `04-flujo-sdd-y-planes.md` § Convención de autorizaciones):
 
 | Acción | Gate que la autoriza |
 |---|---|
@@ -38,8 +38,11 @@ Ninguna de estas acciones se ejecuta por iniciativa propia de un agente; cada un
 | Crear, renombrar o eliminar una rama o un worktree | Autorización explícita del Responsable humano, fuera de los Gates si no estaba en el plan. |
 | Migraciones destructivas o cambios de infraestructura | Autorización explícita y revisión previa del contexto real. |
 
+**Verificador de acciones.** Antes de ejecutar cualquiera de las acciones de esta tabla que sea irreversible (merge y push del código, borrar, migrar, crear o borrar ramas), se consulta al verificador (`07-verificador-de-acciones.md`, borrador por probar). Solo puede vetar: que apruebe no sustituye al Gate que autoriza la acción.
+
 ## Revisar antes de entregar
 
 - Revisar el contexto, el alcance y el diff completo antes de dar por terminada una fase o una tarea.
 - No declarar una tarea o un ítem de la Punch List como terminado sin evidencia real de verificación.
 - Si algo no se pudo verificar, se documenta la limitación en vez de afirmar que se hizo.
+- **Sin reemplazos masivos sobre el plan, el índice de tandas ni la evidencia.** Esos archivos se editan solo con cambios puntuales por fila (buscar el ID y editar esa fila); nunca con scripts de reemplazo masivo. Antes de cualquier edición automatizada de esos archivos, commitear el estado previo o copiar el archivo. *Origen: un script vació el plan y hubo que restaurarlo y reaplicar 175 estados (plan paneles-servicio-persistente).*
